@@ -1,0 +1,173 @@
+{
+  "name": "security-checker-agent",
+  "displayName": "Security Checker Agent",
+  "description": "AI-powered security analysis tool for detecting vulnerabilities in code with OWASP Top 10 integration",
+  "version": "1.0.0",
+  "publisher": "getasyntax",
+  "author": {
+    "name": "Nisal Gunawardhana",
+    "email": "contact@nisalgunawardhana.com",
+    "url": "https://github.com/nisalgunawardhana"
+  },
+  "license": "SEE LICENSE IN LICENSE.md",
+  "icon": "icon.png",
+  "homepage": "https://github.com/nisalgunawardhana/security-checker-agent#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nisalgunawardhana/security-checker-agent.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nisalgunawardhana/security-checker-agent/issues"
+  },
+  "keywords": [
+    "security",
+    "vulnerability",
+    "owasp",
+    "code-analysis",
+    "copilot",
+    "agent",
+    "security-scanner",
+    "static-analysis"
+  ],
+  "engines": {
+    "vscode": "^1.102.0"
+  },
+  "categories": [
+    "Linters",
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "security-checker-agent.auditWorkspace",
+        "title": "Audit Workspace",
+        "category": "Security Checker"
+      },
+      {
+        "command": "security-checker-agent.auditCurrentFile",
+        "title": "Audit Current File",
+        "category": "Security Checker"
+      },
+      {
+        "command": "security-checker-agent.showSecurityReport",
+        "title": "Show Security Report",
+        "category": "Security Checker"
+      },
+      {
+        "command": "security-checker-agent.clearDiagnostics",
+        "title": "Clear Security Diagnostics",
+        "category": "Security Checker"
+      }
+    ],
+    "viewsContainers": {
+      "panel": [
+        {
+          "id": "securityReports",
+          "title": "Security Reports",
+          "icon": "$(shield)"
+        }
+      ]
+    },
+    "views": {
+      "explorer": [
+        {
+          "id": "securityCheckerView",
+          "name": "Security Analysis",
+          "when": "workbenchState != empty",
+          "icon": "$(shield)"
+        }
+      ],
+      "securityReports": [
+        {
+          "id": "securityReportView",
+          "name": "Security Report",
+          "icon": "$(shield)"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Security Checker Agent",
+      "properties": {
+        "securityChecker.enableRealTimeAnalysis": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable real-time security analysis as you type"
+        },
+        "securityChecker.riskThreshold": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "default": "medium",
+          "description": "Minimum risk level to show diagnostics"
+        },
+        "securityChecker.enabledRules": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "injection",
+            "broken-auth",
+            "sensitive-data",
+            "xxe",
+            "broken-access",
+            "security-config",
+            "xss",
+            "insecure-deserialization",
+            "vulnerable-components",
+            "logging-monitoring"
+          ],
+          "description": "OWASP Top 10 rules to enable"
+        }
+      }
+    },
+    "chatParticipants": [
+      {
+        "id": "security-checker-agent",
+        "name": "security-checker-agent",
+        "description": "Security analysis agent for detecting vulnerabilities in code",
+        "isSticky": true
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "npm run check-types && npm run lint && node esbuild.js",
+    "watch": "npm-run-all -p watch:*",
+    "watch:esbuild": "node esbuild.js --watch",
+    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+    "package": "npm run check-types && npm run lint && node esbuild.js --production",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.102.0",
+    "@typescript-eslint/eslint-plugin": "^8.31.1",
+    "@typescript-eslint/parser": "^8.31.1",
+    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-electron": "^2.5.2",
+    "esbuild": "^0.25.3",
+    "eslint": "^9.25.1",
+    "npm-run-all": "^4.1.5",
+    "sharp": "^0.34.3",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@babel/parser": "^7.23.0",
+    "@babel/traverse": "^7.23.0",
+    "acorn": "^8.11.0"
+  }
+}
