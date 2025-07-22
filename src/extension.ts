@@ -131,17 +131,30 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     // Show welcome message
-    vscode.window.showInformationMessage(
-        '🛡️ Security Checker Agent is now active! Use @security-checker-agent in chat to analyze your code.',
-        'Learn More',
-        'Audit Workspace'
-    ).then((selection: string | undefined) => {
-        if (selection === 'Learn More') {
-            vscode.env.openExternal(vscode.Uri.parse('https://owasp.org/Top10/'));
-        } else if (selection === 'Audit Workspace') {
-            vscode.commands.executeCommand('security-checker-agent.auditWorkspace');
-        }
-    });
+    showWelcomeNotification(context);
+}
+
+async function showWelcomeNotification(context: vscode.ExtensionContext): Promise<void> {
+    // Check if this is a new installation by looking for a flag in global state
+    const hasShownWelcome = context.globalState.get<boolean>('hasShownWelcome', false);
+    
+    if (!hasShownWelcome) {
+        // Mark as shown so it doesn't appear again
+        await context.globalState.update('hasShownWelcome', true);
+        
+        // Show the welcome notification
+        vscode.window.showInformationMessage(
+            '🛡️ Welcome to Security Checker Agent v1.0.2! Start securing your code with comprehensive OWASP Top 10 analysis.',
+            'Audit Workspace',
+            'Open Dashboard'
+        ).then((selection: string | undefined) => {
+            if (selection === 'Audit Workspace') {
+                vscode.commands.executeCommand('security-checker-agent.auditWorkspace');
+            } else if (selection === 'Open Dashboard') {
+                vscode.commands.executeCommand('security-checker-agent.openDashboard');
+            }
+        });
+    }
 }
 
 async function auditWorkspace(): Promise<void> {

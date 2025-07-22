@@ -2,7 +2,7 @@
   "name": "security-checker-agent",
   "displayName": "Security Checker Agent",
   "description": "AI-powered security analysis tool for detecting vulnerabilities in code with OWASP Top 10 integration",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "publisher": "getasyntax",
   "author": {
     "name": "Nisal Gunawardhana",
