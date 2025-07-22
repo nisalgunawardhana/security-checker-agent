@@ -9,6 +9,7 @@
 [![GitHub Issues](https://img.shields.io/github/issues/nisalgunawardhana/security-checker-agent)](https://github.com/nisalgunawardhana/security-checker-agent/issues)
 [![GitHub Stars](https://img.shields.io/github/stars/nisalgunawardhana/security-checker-agent)](https://github.com/nisalgunawardhana/security-checker-agent)
 
+
 Security Checker Agent is a comprehensive VS Code extension that automatically analyzes your code for security vulnerabilities based on the **OWASP Top 10** security risks. It provides real-time security analysis, actionable suggestions, and integrates seamlessly with **GitHub Copilot**.
 
 ## ✨ Key Features
@@ -323,10 +324,23 @@ This project is licensed under a Custom License - see the [LICENSE.md](LICENSE.m
 - **GitHub Copilot** for AI integration capabilities
 - **Security Community** for continuous vulnerability research and feedback
 
+## 🚀 Follow Me
+
+Stay updated with the latest news, releases, and tips:
+
+- **GitHub**: [nisalgunawardhana](https://github.com/nisalgunawardhana)
+- **Twitter**: [@thenisals](https://twitter.com/thenisals)
+- **LinkedIn**: [Nisal Gunawardhana](https://www.linkedin.com/in/nisalgunawardhana/)
+- **Twitter**: [@getasyntax](https://twitter.com/getasyntax)
+- **LinkedIn**: [GetAsyntax](https://www.linkedin.com/company/getasyntax)
+
+
+Join our community and never miss an update!
+
 ---
 
 <div align="center">
-  <strong>🛡️ Developed with ❤️ by <a href="https://github.com/nisalgunawardhana">Nisal Gunawardhana</a> (@getasyntax)</strong>
+  <strong>🛡️ Developed with getasyntax by <a href="https://github.com/nisalgunawardhana">Nisal Gunawardhana</a> (@nisalgunawardhana)</strong>
   <br>
   <sub>Making secure coding accessible to everyone</sub>
   <br><br>

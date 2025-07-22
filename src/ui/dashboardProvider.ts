@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
 
-export class SecurityDashboardProvider {
+class SecurityDashboardProvider {
     private panel: vscode.WebviewPanel | undefined;
     private readonly extensionUri: vscode.Uri;
 
@@ -49,14 +48,21 @@ export class SecurityDashboardProvider {
                     case 'exportPdf':
                         vscode.commands.executeCommand('security-checker-agent.exportToPdf');
                         break;
-                    case 'openSettings':
-                        vscode.commands.executeCommand('workbench.action.openSettings', 'securityChecker');
-                        break;
                 }
             },
             undefined,
             []
         );
+    }
+
+    public updateScanResults(vulnerabilityCount: number, score: number): void {
+        if (this.panel) {
+            this.panel.webview.postMessage({
+                command: 'updateScanResults',
+                vulnerabilities: vulnerabilityCount,
+                score: score
+            });
+        }
     }
 
     private getHtmlContent(): string {
@@ -107,10 +113,14 @@ export class SecurityDashboardProvider {
 
         .dashboard-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: 20px;
             max-width: 1200px;
             margin: 0 auto;
+        }
+
+        .full-width-card {
+            grid-column: 1 / -1;
         }
 
         .dashboard-card {
@@ -219,6 +229,60 @@ export class SecurityDashboardProvider {
             grid-column: 1 / -1;
         }
 
+        .owasp-coverage-card {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, #0e0e0eff, #232323ff);
+            color: #ffffff;
+            border: 1px solid rgba(40, 167, 69, 0.3);
+        }
+
+        .owasp-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .owasp-item {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            transition: all 0.2s ease;
+        }
+
+        .owasp-item:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .owasp-item-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .owasp-item-title {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .owasp-status {
+            font-size: 12px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.3);
+            font-weight: 600;
+        }
+
+        .owasp-description {
+            font-size: 12px;
+            opacity: 0.9;
+            line-height: 1.4;
+        }
+
         .activity-item {
             display: flex;
             align-items: center;
@@ -245,6 +309,26 @@ export class SecurityDashboardProvider {
             font-size: 12px;
         }
 
+        .instruction-tip {
+            margin-top: 15px;
+            padding: 12px;
+            background: var(--vscode-textBlockQuote-background);
+            border-left: 4px solid var(--vscode-focusBorder);
+            font-size: 12px;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .instruction-tip strong {
+            color: var(--vscode-focusBorder);
+        }
+
+        .instruction-tip code {
+            background: var(--vscode-textCodeBlock-background);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: var(--vscode-editor-font-family);
+        }
+
         @media (max-width: 768px) {
             .dashboard-grid {
                 grid-template-columns: 1fr;
@@ -252,6 +336,14 @@ export class SecurityDashboardProvider {
             
             .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
+            }
+
+            .owasp-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .full-width-card {
+                grid-column: 1;
             }
         }
     </style>
@@ -267,7 +359,7 @@ export class SecurityDashboardProvider {
 
     <div class="dashboard-grid">
         <!-- Quick Stats -->
-        <div class="quick-stats">
+        <div class="quick-stats full-width-card">
             <h2 style="margin-top: 0;">Security Overview</h2>
             <div class="stats-grid">
                 <div class="stat-item">
@@ -279,17 +371,17 @@ export class SecurityDashboardProvider {
                     <div class="stat-label">OWASP Categories</div>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-number" id="languagesSupported">8+</span>
+                    <span class="stat-number" id="languagesSupported">9+</span>
                     <div class="stat-label">Languages</div>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-number" id="lastScanScore">-</span>
-                    <div class="stat-label">Last Scan Score</div>
+                    <span class="stat-number" id="lastScanScore">Not scanned</span>
+                    <div class="stat-label">Last Scan</div>
                 </div>
             </div>
         </div>
 
-        <!-- Audit Actions -->
+        <!-- Security Analysis -->
         <div class="dashboard-card">
             <div class="card-header">
                 <span class="card-icon">🔍</span>
@@ -301,12 +393,12 @@ export class SecurityDashboardProvider {
             <button class="btn" onclick="auditWorkspace()">
                 <span class="btn-icon">📁</span>Audit Entire Workspace
             </button>
-            <button class="btn btn-secondary" onclick="auditCurrentFile()">
-                <span class="btn-icon">📄</span>Audit Current File
-            </button>
+            <div class="instruction-tip">
+                <strong>💡 Tip:</strong> To audit current file, navigate to the file and use <code>Cmd+Shift+P</code> → <code>Security Checker: Audit Current File</code>
+            </div>
         </div>
 
-        <!-- Reports -->
+        <!-- Security Reports -->
         <div class="dashboard-card">
             <div class="card-header">
                 <span class="card-icon">📊</span>
@@ -323,50 +415,91 @@ export class SecurityDashboardProvider {
             </button>
         </div>
 
-        <!-- Quick Actions -->
-        <div class="dashboard-card">
-            <div class="card-header">
-                <span class="card-icon">⚡</span>
-                <h3 class="card-title">Quick Actions</h3>
-            </div>
-            <div class="card-description">
-                Access frequently used commands and manage your security analysis settings.
-            </div>
-            <button class="btn btn-secondary" onclick="clearDiagnostics()">
-                <span class="btn-icon">🗑️</span>Clear Diagnostics
-            </button>
-            <button class="btn btn-secondary" onclick="openSettings()">
-                <span class="btn-icon">⚙️</span>Extension Settings
-            </button>
-        </div>
-
-        <!-- OWASP Categories -->
-        <div class="dashboard-card">
+        <!-- OWASP Top 10 Coverage -->
+        <div class="dashboard-card owasp-coverage-card full-width-card">
             <div class="card-header">
                 <span class="card-icon">🛡️</span>
-                <h3 class="card-title">OWASP Top 10 Coverage</h3>
+                <h3 class="card-title">OWASP Top 10 2021 - Complete Security Coverage</h3>
             </div>
             <div class="card-description">
-                Complete coverage of all OWASP Top 10 security categories with 50+ predefined rules.
+                Comprehensive analysis covering all OWASP Top 10 security vulnerabilities with 50+ predefined detection rules and real-time monitoring.
             </div>
-            <div style="margin-top: 15px;">
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; font-size: 12px;">
-                    <div>✓ A01: Broken Access Control</div>
-                    <div>✓ A02: Cryptographic Failures</div>
-                    <div>✓ A03: Injection</div>
-                    <div>✓ A04: Insecure Design</div>
-                    <div>✓ A05: Security Misconfiguration</div>
-                    <div>✓ A06: Vulnerable Components</div>
-                    <div>✓ A07: Authentication Failures</div>
-                    <div>✓ A08: Software Integrity Failures</div>
-                    <div>✓ A09: Logging Failures</div>
-                    <div>✓ A10: Server-Side Request Forgery</div>
+            <div class="owasp-grid">
+                <div class="owasp-item">
+                    <div class="owasp-item-header">
+                        <div class="owasp-item-title">A01: Broken Access Control</div>
+                        <div class="owasp-status">✓ Active</div>
+                    </div>
+                    <div class="owasp-description">Detects unauthorized access, privilege escalation, and permission bypasses</div>
+                </div>
+                <div class="owasp-item">
+                    <div class="owasp-item-header">
+                        <div class="owasp-item-title">A02: Cryptographic Failures</div>
+                        <div class="owasp-status">✓ Active</div>
+                    </div>
+                    <div class="owasp-description">Identifies weak encryption, exposed keys, and insecure crypto implementations</div>
+                </div>
+                <div class="owasp-item">
+                    <div class="owasp-item-header">
+                        <div class="owasp-item-title">A03: Injection Attacks</div>
+                        <div class="owasp-status">✓ Active</div>
+                    </div>
+                    <div class="owasp-description">SQL injection, NoSQL injection, command injection, and LDAP injection detection</div>
+                </div>
+                <div class="owasp-item">
+                    <div class="owasp-item-header">
+                        <div class="owasp-item-title">A04: Insecure Design</div>
+                        <div class="owasp-status">✓ Active</div>
+                    </div>
+                    <div class="owasp-description">Architectural flaws and insecure design patterns identification</div>
+                </div>
+                <div class="owasp-item">
+                    <div class="owasp-item-header">
+                        <div class="owasp-item-title">A05: Security Misconfiguration</div>
+                        <div class="owasp-status">✓ Active</div>
+                    </div>
+                    <div class="owasp-description">Default configurations, verbose errors, and insecure server setups</div>
+                </div>
+                <div class="owasp-item">
+                    <div class="owasp-item-header">
+                        <div class="owasp-item-title">A06: Vulnerable Components</div>
+                        <div class="owasp-status">✓ Active</div>
+                    </div>
+                    <div class="owasp-description">Outdated libraries, vulnerable dependencies, and insecure APIs</div>
+                </div>
+                <div class="owasp-item">
+                    <div class="owasp-item-header">
+                        <div class="owasp-item-title">A07: Authentication Failures</div>
+                        <div class="owasp-status">✓ Active</div>
+                    </div>
+                    <div class="owasp-description">Weak passwords, broken session management, and credential stuffing</div>
+                </div>
+                <div class="owasp-item">
+                    <div class="owasp-item-header">
+                        <div class="owasp-item-title">A08: Software Integrity Failures</div>
+                        <div class="owasp-status">✓ Active</div>
+                    </div>
+                    <div class="owasp-description">Code tampering, malicious updates, and supply chain attacks</div>
+                </div>
+                <div class="owasp-item">
+                    <div class="owasp-item-header">
+                        <div class="owasp-item-title">A09: Security Logging Failures</div>
+                        <div class="owasp-status">✓ Active</div>
+                    </div>
+                    <div class="owasp-description">Insufficient logging, monitoring gaps, and incident response issues</div>
+                </div>
+                <div class="owasp-item">
+                    <div class="owasp-item-header">
+                        <div class="owasp-item-title">A10: Server-Side Request Forgery</div>
+                        <div class="owasp-status">✓ Active</div>
+                    </div>
+                    <div class="owasp-description">SSRF attacks, internal service exploitation, and network boundary bypass</div>
                 </div>
             </div>
         </div>
 
         <!-- Recent Activity -->
-        <div class="dashboard-card recent-activity">
+        <div class="dashboard-card recent-activity full-width-card">
             <div class="card-header">
                 <span class="card-icon">📝</span>
                 <h3 class="card-title">Recent Activity</h3>
@@ -374,6 +507,9 @@ export class SecurityDashboardProvider {
             <div class="card-description">
                 Track your recent security analysis activities and findings.
             </div>
+            <button class="btn btn-secondary" onclick="clearDiagnostics()" style="margin-bottom: 15px;">
+                <span class="btn-icon">🗑️</span>Clear Diagnostics
+            </button>
             <div id="recentActivity">
                 <div class="activity-item">
                     <span class="activity-icon">🔍</span>
@@ -397,13 +533,7 @@ export class SecurityDashboardProvider {
                 command: 'auditWorkspace'
             });
             addActivity('🔍', 'Started workspace security audit');
-        }
-
-        function auditCurrentFile() {
-            vscode.postMessage({
-                command: 'auditCurrentFile'
-            });
-            addActivity('📄', 'Started current file security audit');
+            updateScanStatus('Scanning...');
         }
 
         function showReport() {
@@ -425,13 +555,14 @@ export class SecurityDashboardProvider {
                 command: 'clearDiagnostics'
             });
             addActivity('🗑️', 'Cleared security diagnostics');
+            updateScanStatus('Not scanned');
         }
 
-        function openSettings() {
-            vscode.postMessage({
-                command: 'openSettings'
-            });
-            addActivity('⚙️', 'Opened extension settings');
+        function updateScanStatus(status) {
+            const scoreElement = document.getElementById('lastScanScore');
+            if (scoreElement) {
+                scoreElement.textContent = status;
+            }
         }
 
         function addActivity(icon, text) {
@@ -456,8 +587,36 @@ export class SecurityDashboardProvider {
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Security Checker Dashboard loaded');
         });
+
+        // Listen for messages from the extension
+        window.addEventListener('message', event => {
+            const message = event.data;
+            switch (message.command) {
+                case 'updateScanResults':
+                    updateScanResults(message.vulnerabilities, message.score);
+                    break;
+            }
+        });
+
+        function updateScanResults(vulnerabilityCount, score) {
+            const scoreElement = document.getElementById('lastScanScore');
+            if (scoreElement) {
+                if (score >= 0) {
+                    scoreElement.textContent = score + '/100';
+                    scoreElement.style.color = score >= 70 ? '#28a745' : score >= 50 ? '#ffc107' : '#dc3545';
+                } else {
+                    scoreElement.textContent = vulnerabilityCount === 0 ? '✅ Clean' : vulnerabilityCount + ' issues';
+                    scoreElement.style.color = vulnerabilityCount === 0 ? '#28a745' : '#dc3545';
+                }
+            }
+            
+            // Add activity for completed scan
+            addActivity('✅', \`Scan completed: \${vulnerabilityCount} vulnerabilities found\`);
+        }
     </script>
 </body>
 </html>`;
     }
 }
+
+export { SecurityDashboardProvider };

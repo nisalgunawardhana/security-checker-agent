@@ -75,6 +75,13 @@
       }
     ],
     "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "securityChecker",
+          "title": "Security Checker",
+          "icon": "$(shield)"
+        }
+      ],
       "panel": [
         {
           "id": "securityReports",
@@ -84,12 +91,25 @@
       ]
     },
     "views": {
-      "explorer": [
+      "securityChecker": [
         {
           "id": "securityCheckerView",
           "name": "Security Analysis",
           "when": "workbenchState != empty",
           "icon": "$(shield)"
+        },
+        {
+          "id": "securityDashboardView",
+          "name": "Dashboard",
+          "icon": "$(dashboard)"
+        }
+      ],
+      "explorer": [
+        {
+          "id": "securityCheckerExplorer",
+          "name": "Security Issues",
+          "when": "workbenchState != empty",
+          "icon": "$(warning)"
         }
       ],
       "securityReports": [
@@ -105,6 +125,11 @@
         {
           "command": "security-checker-agent.openDashboard",
           "when": "view == securityCheckerView",
+          "group": "navigation"
+        },
+        {
+          "command": "security-checker-agent.openDashboard",
+          "when": "view == securityDashboardView",
           "group": "navigation"
         }
       ]

@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 export class PdfExporter {
-    public static async exportSecurityReportToPdf(): Promise<void> {
+    public static async exportSecurityReportToPdf(currentReport?: any): Promise<void> {
         try {
             // For now, we'll create a simple HTML-based PDF export
             // In a production environment, you might want to use libraries like puppeteer or html-pdf
@@ -14,7 +14,7 @@ export class PdfExporter {
                 return;
             }
 
-            const reportContent = await this.generateReportContent();
+            const reportContent = await this.generateReportContent(currentReport);
             const htmlContent = this.wrapContentInPdfTemplate(reportContent);
             
             // Create reports directory if it doesn't exist
@@ -57,24 +57,28 @@ export class PdfExporter {
         }
     }
 
-    private static async generateReportContent(): Promise<string> {
-        // This would integrate with your existing security analysis
-        // For now, return a sample report structure
+    private static async generateReportContent(reportData?: any): Promise<string> {
+        // Use actual report data if available, otherwise show placeholder
+        const totalFiles = reportData?.totalFiles || 0;
+        const totalVulnerabilities = reportData?.vulnerabilities?.length || 0;
+        const securityScore = reportData?.scoreData?.score || 0;
+        const scoreLevel = reportData?.scoreData?.level || 'Unknown';
+
         return `
         <div class="report-section">
             <h2>Security Analysis Summary</h2>
             <div class="summary-stats">
                 <div class="stat-box">
                     <h3>Total Files Analyzed</h3>
-                    <p class="stat-number">-</p>
+                    <p class="stat-number">${totalFiles}</p>
                 </div>
                 <div class="stat-box">
                     <h3>Vulnerabilities Found</h3>
-                    <p class="stat-number">-</p>
+                    <p class="stat-number">${totalVulnerabilities}</p>
                 </div>
                 <div class="stat-box">
                     <h3>Security Score</h3>
-                    <p class="stat-number">-/100</p>
+                    <p class="stat-number">${securityScore}/100 (${scoreLevel})</p>
                 </div>
             </div>
         </div>
@@ -82,27 +86,65 @@ export class PdfExporter {
         <div class="report-section">
             <h2>OWASP Top 10 Analysis</h2>
             <div class="owasp-categories">
-                <div class="category-item">
-                    <h4>A01: Broken Access Control</h4>
-                    <p>Status: <span class="status-ok">No issues found</span></p>
-                </div>
-                <div class="category-item">
-                    <h4>A02: Cryptographic Failures</h4>
-                    <p>Status: <span class="status-ok">No issues found</span></p>
-                </div>
-                <div class="category-item">
-                    <h4>A03: Injection</h4>
-                    <p>Status: <span class="status-ok">No issues found</span></p>
-                </div>
-                <!-- Add more categories as needed -->
+                ${this.generateOwaspCategoriesReport(reportData?.vulnerabilities || [])}
             </div>
         </div>
 
         <div class="report-section">
-            <h2>Detailed Findings</h2>
-            <p>Run a security audit to see detailed vulnerability findings here.</p>
+            <h2>Detailed Vulnerabilities</h2>
+            <div class="vulnerabilities-list">
+                ${this.generateVulnerabilitiesReport(reportData?.vulnerabilities || [])}
+            </div>
         </div>
         `;
+    }
+
+    private static generateOwaspCategoriesReport(vulnerabilities: any[]): string {
+        const categories = [
+            { id: 'A01', name: 'Broken Access Control' },
+            { id: 'A02', name: 'Cryptographic Failures' },
+            { id: 'A03', name: 'Injection' },
+            { id: 'A04', name: 'Insecure Design' },
+            { id: 'A05', name: 'Security Misconfiguration' },
+            { id: 'A06', name: 'Vulnerable Components' },
+            { id: 'A07', name: 'Authentication Failures' },
+            { id: 'A08', name: 'Software Integrity Failures' },
+            { id: 'A09', name: 'Logging Failures' },
+            { id: 'A10', name: 'Server-Side Request Forgery' }
+        ];
+
+        return categories.map(category => {
+            const categoryVulns = vulnerabilities.filter(v => 
+                v.rule?.category?.toLowerCase().includes(category.name.toLowerCase().split(' ')[0])
+            );
+            const status = categoryVulns.length > 0 ? 
+                `<span class="status-warning">${categoryVulns.length} issue(s) found</span>` :
+                `<span class="status-ok">No issues found</span>`;
+            
+            return `
+                <div class="category-item">
+                    <h4>${category.id}: ${category.name}</h4>
+                    <p>Status: ${status}</p>
+                </div>
+            `;
+        }).join('');
+    }
+
+    private static generateVulnerabilitiesReport(vulnerabilities: any[]): string {
+        if (vulnerabilities.length === 0) {
+            return '<p class="no-vulnerabilities">🎉 No security vulnerabilities found!</p>';
+        }
+
+        return vulnerabilities.map(vuln => `
+            <div class="vulnerability-item">
+                <h4>${vuln.rule?.name || 'Unknown Vulnerability'}</h4>
+                <p><strong>File:</strong> ${vuln.filePath?.split('/').pop() || 'Unknown'}</p>
+                <p><strong>Line:</strong> ${vuln.line || 'N/A'}</p>
+                <p><strong>Severity:</strong> <span class="severity-${vuln.rule?.severity?.toLowerCase()}">${vuln.rule?.severity || 'Unknown'}</span></p>
+                <p><strong>Description:</strong> ${vuln.rule?.description || 'No description available'}</p>
+                <p><strong>Suggestion:</strong> ${vuln.suggestion || 'No suggestion available'}</p>
+            </div>
+        `).join('');
     }
 
     private static wrapContentInPdfTemplate(content: string): string {
@@ -204,6 +246,67 @@ export class PdfExporter {
         .category-item p {
             margin: 0;
             color: #6c757d;
+        }
+
+        .status-ok {
+            color: #28a745;
+            font-weight: 600;
+        }
+
+        .status-warning {
+            color: #ffc107;
+            font-weight: 600;
+        }
+
+        .vulnerabilities-list {
+            display: grid;
+            gap: 20px;
+        }
+
+        .vulnerability-item {
+            padding: 20px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background: #ffffff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .vulnerability-item h4 {
+            margin: 0 0 15px 0;
+            color: #dc3545;
+            font-size: 18px;
+        }
+
+        .vulnerability-item p {
+            margin: 8px 0;
+            color: #495057;
+        }
+
+        .vulnerability-item strong {
+            color: #212529;
+        }
+
+        .severity-high {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .severity-medium {
+            color: #ffc107;
+            font-weight: bold;
+        }
+
+        .severity-low {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .no-vulnerabilities {
+            text-align: center;
+            padding: 40px;
+            color: #28a745;
+            font-size: 18px;
+            font-weight: 600;
         }
 
         .status-ok {

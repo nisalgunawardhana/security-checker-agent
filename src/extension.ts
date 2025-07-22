@@ -3,6 +3,7 @@ import { MultiLanguageParser } from './security/parser';
 import { OwaspSecurityAnalyzer, SecurityVulnerability } from './security/owaspRules';
 import { SecurityReportGenerator, SecurityReport } from './security/reportGenerator';
 import { SecurityDiagnosticsProvider, SecurityTreeDataProvider } from './ui/diagnostics';
+import { DashboardTreeDataProvider } from './ui/dashboardTreeProvider';
 import { SecurityChatParticipant } from './chat/chatParticipant';
 import { SecurityDashboardProvider } from './ui/dashboardProvider';
 import { PdfExporter } from './utils/pdfExporter';
@@ -35,6 +36,33 @@ export function activate(context: vscode.ExtensionContext) {
         showCollapseAll: true
     });
 
+    // Register dashboard view (empty tree data provider for the dashboard view)
+    const dashboardTreeDataProvider = new DashboardTreeDataProvider();
+    
+    const dashboardView = vscode.window.createTreeView('securityDashboardView', {
+        treeDataProvider: dashboardTreeDataProvider,
+        showCollapseAll: false
+    });
+
+    // Auto-open dashboard when the Security Checker activity bar is opened
+    dashboardView.onDidChangeVisibility((e) => {
+        if (e.visible) {
+            // Small delay to ensure the view is fully rendered
+            setTimeout(() => {
+                dashboardProvider.show();
+            }, 100);
+        }
+    });
+
+    treeView.onDidChangeVisibility((e) => {
+        if (e.visible) {
+            // Small delay to ensure the view is fully rendered
+            setTimeout(() => {
+                dashboardProvider.show();
+            }, 100);
+        }
+    });
+
     // Register chat participant
     const chatParticipant = new SecurityChatParticipant();
     const participant = vscode.chat.createChatParticipant('security-checker-agent', chatParticipant.handleChatRequest.bind(chatParticipant));
@@ -62,7 +90,7 @@ export function activate(context: vscode.ExtensionContext) {
     });
 
     const exportToPdfCommand = vscode.commands.registerCommand('security-checker-agent.exportToPdf', async () => {
-        await PdfExporter.exportSecurityReportToPdf();
+        await PdfExporter.exportSecurityReportToPdf(currentReport);
     });
 
     // Auto-analysis on file save (if enabled)
@@ -89,6 +117,7 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         diagnosticsProvider,
         treeView,
+        dashboardView,
         participant,
         statusBarItem,
         openDashboardCommand,
@@ -185,6 +214,7 @@ async function auditWorkspace(): Promise<void> {
             // Update UI
             diagnosticsProvider.updateDiagnostics(allVulnerabilities);
             treeDataProvider.updateVulnerabilities(allVulnerabilities);
+            dashboardProvider.updateScanResults(allVulnerabilities.length, scoreData.score);
 
             progress.report({ increment: 100, message: 'Analysis complete!' });
 
@@ -265,6 +295,11 @@ async function analyzeDocument(document: vscode.TextDocument): Promise<void> {
             treeDataProvider.updateVulnerabilities(vulnerabilities);
         }
 
+        // Update dashboard with current file analysis results
+        const analyzer = new OwaspSecurityAnalyzer();
+        const scoreData = analyzer.calculateSecurityScore(vulnerabilities);
+        dashboardProvider.updateScanResults(vulnerabilities.length, scoreData.score);
+
     } catch (error) {
         console.error('Error analyzing document:', error);
     }
@@ -290,6 +325,17 @@ async function showSecurityReport(): Promise<void> {
             }
         );
 
+        // Handle messages from the webview
+        reportWebviewPanel.webview.onDidReceiveMessage(
+            async message => {
+                switch (message.command) {
+                    case 'navigateToVulnerability':
+                        await navigateToVulnerability(message.filePath, message.line, message.column, message.suggestion);
+                        break;
+                }
+            }
+        );
+
         reportWebviewPanel.onDidDispose(() => {
             reportWebviewPanel = undefined;
         });
@@ -304,7 +350,68 @@ async function showSecurityReport(): Promise<void> {
 function clearDiagnostics(): void {
     diagnosticsProvider.clearDiagnostics();
     treeDataProvider.updateVulnerabilities([]);
+    dashboardProvider.updateScanResults(0, 0);
     vscode.window.showInformationMessage('Security diagnostics cleared.');
+}
+
+async function navigateToVulnerability(filePath: string, line: number, column: number, suggestion: string): Promise<void> {
+    try {
+        // Open the file
+        const document = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath));
+        const editor = await vscode.window.showTextDocument(document, vscode.ViewColumn.One);
+        
+        // Navigate to the specific line and column
+        const position = new vscode.Position(Math.max(0, line - 1), Math.max(0, column - 1));
+        const range = new vscode.Range(position, position);
+        
+        // Move cursor to the position
+        editor.selection = new vscode.Selection(position, position);
+        editor.revealRange(range, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
+        
+        // Add a comment with the suggestion
+        const lineText = document.lineAt(position.line).text;
+        const commentPrefix = getCommentPrefix(filePath);
+        const suggestionComment = `${commentPrefix} 🛡️ Security Suggestion: ${suggestion}`;
+        
+        // Insert the comment above the vulnerable line
+        await editor.edit(editBuilder => {
+            const commentPosition = new vscode.Position(position.line, 0);
+            const indentation = lineText.match(/^\s*/)?.[0] || '';
+            editBuilder.insert(commentPosition, `${indentation}${suggestionComment}\n`);
+        });
+        
+        // Show success message
+        vscode.window.showInformationMessage(`Navigated to vulnerability and added security suggestion as comment.`);
+        
+    } catch (error) {
+        vscode.window.showErrorMessage(`Failed to navigate to vulnerability: ${error}`);
+    }
+}
+
+function getCommentPrefix(filePath: string): string {
+    const extension = filePath.split('.').pop()?.toLowerCase();
+    
+    switch (extension) {
+        case 'js':
+        case 'jsx':
+        case 'ts':
+        case 'tsx':
+        case 'java':
+        case 'c':
+        case 'cpp':
+        case 'cs':
+        case 'go':
+        case 'php':
+            return '//';
+        case 'py':
+        case 'rb':
+            return '#';
+        case 'html':
+        case 'xml':
+            return '<!--';
+        default:
+            return '//';
+    }
 }
 
 export function deactivate() {

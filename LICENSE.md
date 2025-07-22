@@ -1,6 +1,6 @@
 # Custom License for Security Checker Agent
 
-## Copyright (c) 2025 Nisal Gunawardhana (getasyntax)
+## Copyright (c) 2025 Nisal Gunawardhana 
 
 ### Terms and Conditions
 
@@ -12,7 +12,7 @@
 
 **Under the following conditions:**
 
-1. **Attribution**: You must give appropriate credit to the original author (Nisal Gunawardhana - getasyntax), provide a link to the original repository, and indicate if changes were made.
+1. **Attribution**: You must give appropriate credit to the original author (Nisal Gunawardhana), provide a link to the original repository, and indicate if changes were made.
 
 2. **No Republishing**: You may NOT republish this extension or any derivative work to any marketplace (VS Code Marketplace, Open VSX Registry, etc.) under a different name or publisher.
 
@@ -29,8 +29,8 @@ Contributions are welcome and encouraged! By contributing to this project, you a
 ### Contact
 
 For permissions beyond the scope of this license, please contact:
-- Email: contact@getasyntax.dev
-- GitHub: https://github.com/getasyntax
+- Email: contact@nisalgunawardhana.com
+- GitHub: https://github.com/nisalgunawardhana
 
 ---
 
