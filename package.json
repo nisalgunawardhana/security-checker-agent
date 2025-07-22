@@ -2,7 +2,7 @@
   "name": "security-checker-agent",
   "displayName": "Security Checker Agent",
   "description": "AI-powered security analysis tool for detecting vulnerabilities in code with OWASP Top 10 integration",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "getasyntax",
   "author": {
     "name": "Nisal Gunawardhana",
@@ -43,6 +43,12 @@
   "contributes": {
     "commands": [
       {
+        "command": "security-checker-agent.openDashboard",
+        "title": "Open Security Dashboard",
+        "category": "Security Checker",
+        "icon": "$(shield)"
+      },
+      {
         "command": "security-checker-agent.auditWorkspace",
         "title": "Audit Workspace",
         "category": "Security Checker"
@@ -60,6 +66,11 @@
       {
         "command": "security-checker-agent.clearDiagnostics",
         "title": "Clear Security Diagnostics",
+        "category": "Security Checker"
+      },
+      {
+        "command": "security-checker-agent.exportToPdf",
+        "title": "Export Security Report to PDF",
         "category": "Security Checker"
       }
     ],
@@ -86,6 +97,15 @@
           "id": "securityReportView",
           "name": "Security Report",
           "icon": "$(shield)"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "security-checker-agent.openDashboard",
+          "when": "view == securityCheckerView",
+          "group": "navigation"
         }
       ]
     },

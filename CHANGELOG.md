@@ -14,6 +14,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Performance optimizations in development
 
+## [1.0.1] - 2025-07-22
+
+### Added
+- 🎛️ **Security Dashboard Interface**
+  - Interactive dashboard with visual buttons for all main functions
+  - Easy access to audit workspace, current file, and generate reports
+  - Quick stats overview with OWASP Top 10 coverage display
+  - Recent activity tracking for user actions
+  
+- 📊 **Enhanced User Experience** 
+  - Status bar integration with "Security" button for quick dashboard access
+  - One-click access to all extension features without command palette
+  - Visual buttons replacing command-only interface
+  
+- 📄 **PDF Export Functionality**
+  - Export security reports to PDF format
+  - HTML-based reports that can be converted to PDF via browser
+  - Professional report templates with branding
+  - Automatic report saving to `.security-reports` directory
+
+### Improved
+- **User Interface**: Dashboard provides intuitive button-based access to all features
+- **Accessibility**: No longer need to remember command palette commands
+- **Workflow**: Streamlined user experience with visual dashboard
+- **Reporting**: Professional report generation with export capabilities
+
+### Technical Enhancements
+- New `SecurityDashboardProvider` class for webview dashboard management
+- `PdfExporter` utility class for report export functionality
+- Status bar integration for quick access
+- Enhanced command registration with dashboard integration
+
 ## [1.0.0] - 2025-07-22
 
 ### Added

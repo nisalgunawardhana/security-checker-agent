@@ -4,9 +4,13 @@ import { OwaspSecurityAnalyzer, SecurityVulnerability } from './security/owaspRu
 import { SecurityReportGenerator, SecurityReport } from './security/reportGenerator';
 import { SecurityDiagnosticsProvider, SecurityTreeDataProvider } from './ui/diagnostics';
 import { SecurityChatParticipant } from './chat/chatParticipant';
+import { SecurityDashboardProvider } from './ui/dashboardProvider';
+import { PdfExporter } from './utils/pdfExporter';
 
 let diagnosticsProvider: SecurityDiagnosticsProvider;
 let treeDataProvider: SecurityTreeDataProvider;
+let dashboardProvider: SecurityDashboardProvider;
+let statusBarItem: vscode.StatusBarItem;
 let reportWebviewPanel: vscode.WebviewPanel | undefined;
 let currentReport: SecurityReport | undefined;
 
@@ -16,6 +20,14 @@ export function activate(context: vscode.ExtensionContext) {
     // Initialize providers
     diagnosticsProvider = new SecurityDiagnosticsProvider();
     treeDataProvider = new SecurityTreeDataProvider();
+    dashboardProvider = new SecurityDashboardProvider(context.extensionUri);
+
+    // Create status bar item
+    statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+    statusBarItem.text = "$(shield) Security";
+    statusBarItem.tooltip = "Open Security Checker Dashboard";
+    statusBarItem.command = 'security-checker-agent.openDashboard';
+    statusBarItem.show();
     
     // Register tree view
     const treeView = vscode.window.createTreeView('securityCheckerView', {
@@ -29,6 +41,10 @@ export function activate(context: vscode.ExtensionContext) {
     participant.iconPath = new vscode.ThemeIcon('shield');
 
     // Register commands
+    const openDashboardCommand = vscode.commands.registerCommand('security-checker-agent.openDashboard', () => {
+        dashboardProvider.show();
+    });
+
     const auditWorkspaceCommand = vscode.commands.registerCommand('security-checker-agent.auditWorkspace', async () => {
         await auditWorkspace();
     });
@@ -43,6 +59,10 @@ export function activate(context: vscode.ExtensionContext) {
 
     const clearDiagnosticsCommand = vscode.commands.registerCommand('security-checker-agent.clearDiagnostics', () => {
         clearDiagnostics();
+    });
+
+    const exportToPdfCommand = vscode.commands.registerCommand('security-checker-agent.exportToPdf', async () => {
+        await PdfExporter.exportSecurityReportToPdf();
     });
 
     // Auto-analysis on file save (if enabled)
@@ -70,10 +90,13 @@ export function activate(context: vscode.ExtensionContext) {
         diagnosticsProvider,
         treeView,
         participant,
+        statusBarItem,
+        openDashboardCommand,
         auditWorkspaceCommand,
         auditCurrentFileCommand,
         showSecurityReportCommand,
         clearDiagnosticsCommand,
+        exportToPdfCommand,
         onDidSaveDocument,
         onDidChangeActiveTextEditor
     );

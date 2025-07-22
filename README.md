@@ -57,7 +57,7 @@ Chat with the security agent using natural language:
 ## � Getting Started
 
 ### Installation
-1. Install from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=your-publisher.security-checker-agent)
+1. Install from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=getasyntax.security-checker-agent)
 2. Open any workspace with code files
 3. The extension activates automatically
 
