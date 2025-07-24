@@ -58,6 +58,7 @@ export class MultiLanguageParser {
         ['.jsx', 'javascript'],
         ['.ts', 'typescript'],
         ['.tsx', 'typescript'],
+        ['.vue', 'vue'],
         ['.py', 'python'],
         ['.java', 'java'],
         ['.cs', 'csharp'],
@@ -65,7 +66,14 @@ export class MultiLanguageParser {
         ['.rb', 'ruby'],
         ['.go', 'go'],
         ['.cpp', 'cpp'],
-        ['.c', 'c']
+        ['.c', 'c'],
+        ['.dockerfile', 'dockerfile'],
+        ['.json', 'json'],
+        ['.yaml', 'yaml'],
+        ['.yml', 'yaml'],
+        ['.rs', 'rust'],
+        ['.kt', 'kotlin'],
+        ['.swift', 'swift']
     ]);
 
     constructor(enabledRules?: string[]) {
@@ -211,7 +219,24 @@ export class MultiLanguageParser {
             }
 
             try {
+                // Track potentially tainted variables for data flow analysis
+                const taintedVariables = new Set<string>();
+                
                 traverse(ast, {
+                    // Detect sources of user input
+                    VariableDeclarator: (path: any) => {
+                        const init = path.node.init;
+                        if (init && init.type === 'MemberExpression') {
+                            // Track req.body, req.params, req.query as tainted
+                            if (init.object && init.object.name === 'req' && 
+                                (init.property.name === 'body' || init.property.name === 'params' || init.property.name === 'query')) {
+                                if (path.node.id && path.node.id.name) {
+                                    taintedVariables.add(path.node.id.name);
+                                }
+                            }
+                        }
+                    },
+
                     CallExpression: (path: any) => {
                         const callee = path.node.callee;
                         
@@ -237,6 +262,58 @@ export class MultiLanguageParser {
                             });
                         }
 
+                        // Check for React dangerouslySetInnerHTML with tainted data
+                        if (callee.type === 'MemberExpression' && callee.property.name === 'createElement') {
+                            const args = path.node.arguments;
+                            if (args.length > 1 && args[1] && args[1].type === 'ObjectExpression') {
+                                const dangerousProp = args[1].properties.find((prop: any) => 
+                                    prop.key && prop.key.name === 'dangerouslySetInnerHTML');
+                                if (dangerousProp && this.containsTaintedVariable(dangerousProp.value, taintedVariables)) {
+                                    vulnerabilities.push({
+                                        rule: {
+                                            id: 'ast-react-xss-advanced',
+                                            name: 'React XSS via Tainted Data',
+                                            description: 'dangerouslySetInnerHTML used with potentially tainted user input',
+                                            owaspCategory: 'A03:2021 - Injection',
+                                            severity: 'critical',
+                                            patterns: [],
+                                            languages: ['javascript', 'typescript'],
+                                            mitigation: 'Sanitize user input before using dangerouslySetInnerHTML'
+                                        },
+                                        line: path.node.loc?.start?.line || 0,
+                                        column: path.node.loc?.start?.column || 0,
+                                        text: 'dangerouslySetInnerHTML with user input',
+                                        filePath: '',
+                                        suggestion: 'Use DOMPurify.sanitize() before setting HTML content'
+                                    });
+                                }
+                            }
+                        }
+
+                        // Check for SQL query construction with tainted variables
+                        if (callee.object && (callee.property.name === 'query' || callee.property.name === 'execute')) {
+                            const args = path.node.arguments;
+                            if (args.length > 0 && this.containsTaintedVariable(args[0], taintedVariables)) {
+                                vulnerabilities.push({
+                                    rule: {
+                                        id: 'ast-sql-injection-advanced',
+                                        name: 'SQL Injection via Data Flow',
+                                        description: 'Database query constructed with tainted user input',
+                                        owaspCategory: 'A03:2021 - Injection',
+                                        severity: 'critical',
+                                        patterns: [],
+                                        languages: ['javascript', 'typescript'],
+                                        mitigation: 'Use parameterized queries to prevent SQL injection'
+                                    },
+                                    line: path.node.loc?.start?.line || 0,
+                                    column: path.node.loc?.start?.column || 0,
+                                    text: 'SQL query with user input',
+                                    filePath: '',
+                                    suggestion: 'Use db.query("SELECT * FROM users WHERE id = ?", [userId])'
+                                });
+                            }
+                        }
+
                         // Check for innerHTML assignments with variables
                         if (callee.object && callee.property && 
                             callee.property.name === 'innerHTML' && 
@@ -257,6 +334,27 @@ export class MultiLanguageParser {
                                 text: 'innerHTML with variable content',
                                 filePath: '',
                                 suggestion: 'Use element.textContent = value or sanitize HTML with DOMPurify'
+                            });
+                        }
+
+                        // Check for JWT decode without verification
+                        if (callee.object && callee.object.name === 'jwt' && callee.property.name === 'decode') {
+                            vulnerabilities.push({
+                                rule: {
+                                    id: 'ast-jwt-no-verify',
+                                    name: 'JWT Decoded Without Verification',
+                                    description: 'JWT token decoded without proper verification',
+                                    owaspCategory: 'A07:2021 - Identification and Authentication Failures',
+                                    severity: 'critical',
+                                    patterns: [],
+                                    languages: ['javascript', 'typescript'],
+                                    mitigation: 'Use jwt.verify() instead of jwt.decode() for security'
+                                },
+                                line: path.node.loc?.start?.line || 0,
+                                column: path.node.loc?.start?.column || 0,
+                                text: 'jwt.decode() detected',
+                                filePath: '',
+                                suggestion: 'Replace with jwt.verify(token, secret) to ensure token integrity'
                             });
                         }
                     },
@@ -285,6 +383,59 @@ export class MultiLanguageParser {
                                 suggestion: 'Set cookies with security flags: "name=value; Secure; HttpOnly; SameSite=Strict"'
                             });
                         }
+
+                        // Check for React state mutations
+                        if (left.object && left.object.type === 'MemberExpression' &&
+                            left.object.object && left.object.object.type === 'ThisExpression' &&
+                            left.object.property && left.object.property.name === 'state') {
+                            vulnerabilities.push({
+                                rule: {
+                                    id: 'ast-react-state-mutation',
+                                    name: 'Direct React State Mutation',
+                                    description: 'Direct mutation of React state detected',
+                                    owaspCategory: 'A04:2021 - Insecure Design',
+                                    severity: 'medium',
+                                    patterns: [],
+                                    languages: ['javascript', 'typescript'],
+                                    mitigation: 'Use setState() to update React state'
+                                },
+                                line: path.node.loc?.start?.line || 0,
+                                column: path.node.loc?.start?.column || 0,
+                                text: 'this.state.property = value',
+                                filePath: '',
+                                suggestion: 'Use this.setState({property: value}) instead'
+                            });
+                        }
+                    },
+
+                    // Check for template literals with user input
+                    TemplateLiteral: (path: any) => {
+                        const expressions = path.node.expressions;
+                        for (const expr of expressions) {
+                            if (this.containsTaintedVariable(expr, taintedVariables)) {
+                                // Check if it's in a dangerous context (SQL, HTML, etc.)
+                                const parent = path.parent;
+                                if (this.isDangerousContext(parent)) {
+                                    vulnerabilities.push({
+                                        rule: {
+                                            id: 'ast-template-injection',
+                                            name: 'Template Injection Risk',
+                                            description: 'Template literal with user input in dangerous context',
+                                            owaspCategory: 'A03:2021 - Injection',
+                                            severity: 'high',
+                                            patterns: [],
+                                            languages: ['javascript', 'typescript'],
+                                            mitigation: 'Use parameterized queries or proper escaping'
+                                        },
+                                        line: path.node.loc?.start?.line || 0,
+                                        column: path.node.loc?.start?.column || 0,
+                                        text: 'Template literal with user input',
+                                        filePath: '',
+                                        suggestion: 'Use parameterized queries or escape user input'
+                                    });
+                                }
+                            }
+                        }
                     }
                 });
             } catch (error) {
@@ -293,5 +444,57 @@ export class MultiLanguageParser {
         }
 
         return vulnerabilities;
+    }
+
+    // Helper method to check if a node contains tainted variables
+    private containsTaintedVariable(node: any, taintedVariables: Set<string>): boolean {
+        if (!node) {
+            return false;
+        }
+        
+        if (node.type === 'Identifier') {
+            return taintedVariables.has(node.name);
+        }
+        
+        if (node.type === 'MemberExpression') {
+            return this.containsTaintedVariable(node.object, taintedVariables) ||
+                   this.containsTaintedVariable(node.property, taintedVariables);
+        }
+        
+        if (node.type === 'BinaryExpression') {
+            return this.containsTaintedVariable(node.left, taintedVariables) ||
+                   this.containsTaintedVariable(node.right, taintedVariables);
+        }
+        
+        if (node.type === 'CallExpression') {
+            return node.arguments.some((arg: any) => this.containsTaintedVariable(arg, taintedVariables));
+        }
+        
+        return false;
+    }
+
+    // Helper method to check if we're in a dangerous context
+    private isDangerousContext(parent: any): boolean {
+        if (!parent) {
+            return false;
+        }
+        
+        // Check for SQL query context
+        if (parent.type === 'CallExpression' && parent.callee) {
+            const callee = parent.callee;
+            if (callee.property && (callee.property.name === 'query' || callee.property.name === 'execute')) {
+                return true;
+            }
+        }
+        
+        // Check for innerHTML context
+        if (parent.type === 'AssignmentExpression' && parent.left) {
+            const left = parent.left;
+            if (left.property && left.property.name === 'innerHTML') {
+                return true;
+            }
+        }
+        
+        return false;
     }
 }

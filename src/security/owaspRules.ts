@@ -230,6 +230,263 @@ export const OWASP_TOP_10_RULES: SecurityRule[] = [
         ],
         languages: ['javascript', 'typescript', 'python', 'java', 'csharp'],
         mitigation: 'Validate and whitelist allowed URLs and domains'
+    },
+
+    // Modern Framework Security Rules - React
+    {
+        id: 'react-xss-1',
+        name: 'React dangerouslySetInnerHTML XSS',
+        description: 'Use of dangerouslySetInnerHTML with user input can lead to XSS',
+        owaspCategory: 'A03:2021 - Injection',
+        severity: 'critical',
+        patterns: [
+            /dangerouslySetInnerHTML\s*=\s*{{\s*__html:\s*[^}]*\+/gi,
+            /dangerouslySetInnerHTML\s*=\s*{{\s*__html:\s*[^}]*\$\{/gi,
+            /dangerouslySetInnerHTML\s*=\s*{{\s*__html:\s*props\./gi,
+            /dangerouslySetInnerHTML\s*=\s*{{\s*__html:\s*state\./gi
+        ],
+        languages: ['javascript', 'typescript', 'jsx', 'tsx'],
+        mitigation: 'Sanitize HTML content using DOMPurify or avoid dangerouslySetInnerHTML'
+    },
+    {
+        id: 'react-xss-2',
+        name: 'React href XSS Vulnerability',
+        description: 'Dynamic href attributes can lead to javascript: protocol XSS',
+        owaspCategory: 'A03:2021 - Injection',
+        severity: 'high',
+        patterns: [
+            /href\s*=\s*{[^}]*\+/gi,
+            /href\s*=\s*{[^}]*\$\{/gi,
+            /href\s*=\s*{\s*props\./gi,
+            /href\s*=\s*{\s*state\./gi
+        ],
+        languages: ['javascript', 'typescript', 'jsx', 'tsx'],
+        mitigation: 'Validate URLs and use URL constructor to prevent javascript: protocol injection'
+    },
+    {
+        id: 'react-state-1',
+        name: 'React State Mutation',
+        description: 'Direct state mutation detected, can lead to security issues',
+        owaspCategory: 'A04:2021 - Insecure Design',
+        severity: 'medium',
+        patterns: [
+            /this\.state\.[a-zA-Z_][a-zA-Z0-9_]*\s*=\s*/gi,
+            /state\.[a-zA-Z_][a-zA-Z0-9_]*\s*=\s*/gi
+        ],
+        languages: ['javascript', 'typescript', 'jsx', 'tsx'],
+        mitigation: 'Use setState() or state setters to ensure proper state management'
+    },
+
+    // Vue.js Security Rules
+    {
+        id: 'vue-xss-1',
+        name: 'Vue.js v-html XSS Risk',
+        description: 'Use of v-html directive with user input can lead to XSS',
+        owaspCategory: 'A03:2021 - Injection',
+        severity: 'critical',
+        patterns: [
+            /v-html\s*=\s*["'][^"']*\+/gi,
+            /v-html\s*=\s*["'][^"']*\$\{/gi,
+            /v-html\s*=\s*["'][^"']*props\./gi,
+            /v-html\s*=\s*["'][^"']*data\./gi
+        ],
+        languages: ['javascript', 'typescript', 'vue'],
+        mitigation: 'Sanitize HTML content or use v-text for plain text rendering'
+    },
+    {
+        id: 'vue-injection-1',
+        name: 'Vue.js Template Injection',
+        description: 'Dynamic template compilation with user input',
+        owaspCategory: 'A03:2021 - Injection',
+        severity: 'high',
+        patterns: [
+            /Vue\.compile\s*\([^)]*\+/gi,
+            /\$compile\s*\([^)]*\+/gi,
+            /template:\s*[^,}]*\+/gi
+        ],
+        languages: ['javascript', 'typescript', 'vue'],
+        mitigation: 'Avoid dynamic template compilation with user input'
+    },
+
+    // Angular Security Rules
+    {
+        id: 'angular-xss-1',
+        name: 'Angular innerHTML XSS Risk',
+        description: 'Use of innerHTML binding with user input can lead to XSS',
+        owaspCategory: 'A03:2021 - Injection',
+        severity: 'critical',
+        patterns: [
+            /\[innerHTML\]\s*=\s*[^>]*\+/gi,
+            /\[innerHTML\]\s*=\s*[^>]*\$\{/gi,
+            /\.innerHTML\s*=\s*[^;]*\+/gi
+        ],
+        languages: ['javascript', 'typescript'],
+        mitigation: 'Use Angular DomSanitizer or avoid innerHTML binding'
+    },
+    {
+        id: 'angular-trust-1',
+        name: 'Angular Unsafe Trust Usage',
+        description: 'Use of bypassSecurityTrust methods can introduce XSS',
+        owaspCategory: 'A03:2021 - Injection',
+        severity: 'high',
+        patterns: [
+            /bypassSecurityTrustHtml\s*\(/gi,
+            /bypassSecurityTrustScript\s*\(/gi,
+            /bypassSecurityTrustUrl\s*\(/gi,
+            /bypassSecurityTrustResourceUrl\s*\(/gi
+        ],
+        languages: ['javascript', 'typescript'],
+        mitigation: 'Carefully validate input before using bypass methods'
+    },
+
+    // API Security Rules
+    {
+        id: 'api-graphql-1',
+        name: 'GraphQL Query Complexity',
+        description: 'Potential GraphQL DoS through query complexity',
+        owaspCategory: 'A04:2021 - Insecure Design',
+        severity: 'medium',
+        patterns: [
+            /query\s*{[^}]*{[^}]*{[^}]*{/gi,
+            /mutation\s*{[^}]*{[^}]*{[^}]*{/gi
+        ],
+        languages: ['javascript', 'typescript', 'python'],
+        mitigation: 'Implement query complexity limits and depth limiting'
+    },
+    {
+        id: 'api-graphql-2',
+        name: 'GraphQL Injection Risk',
+        description: 'Dynamic GraphQL query construction with user input',
+        owaspCategory: 'A03:2021 - Injection',
+        severity: 'critical',
+        patterns: [
+            /`query\s*{[^`]*\$\{[^}]*\}/gi,
+            /`mutation\s*{[^`]*\$\{[^}]*\}/gi,
+            /"query":\s*"[^"]*"\s*\+/gi
+        ],
+        languages: ['javascript', 'typescript', 'python'],
+        mitigation: 'Use parameterized GraphQL queries and proper validation'
+    },
+    {
+        id: 'api-cors-1',
+        name: 'Insecure CORS Configuration',
+        description: 'Overly permissive CORS configuration detected',
+        owaspCategory: 'A05:2021 - Security Misconfiguration',
+        severity: 'high',
+        patterns: [
+            /Access-Control-Allow-Origin:\s*\*/gi,
+            /cors\(\s*{\s*origin:\s*true/gi,
+            /\.cors\(\s*\)/gi,
+            /"Access-Control-Allow-Origin":\s*"\*"/gi
+        ],
+        languages: ['javascript', 'typescript', 'python', 'java', 'csharp'],
+        mitigation: 'Configure CORS with specific origins and proper credentials handling'
+    },
+    {
+        id: 'api-rate-limit-1',
+        name: 'Missing Rate Limiting',
+        description: 'API endpoint without rate limiting detected',
+        owaspCategory: 'A04:2021 - Insecure Design',
+        severity: 'medium',
+        patterns: [
+            /app\.(get|post|put|delete)\([^)]*\)(?![^{]*rateLimit)/gi,
+            /router\.(get|post|put|delete)\([^)]*\)(?![^{]*rateLimit)/gi,
+            /@RequestMapping(?![^{]*@RateLimited)/gi
+        ],
+        languages: ['javascript', 'typescript', 'java'],
+        mitigation: 'Implement rate limiting to prevent abuse and DoS attacks'
+    },
+
+    // Cloud Security Rules
+    {
+        id: 'cloud-aws-s3-1',
+        name: 'AWS S3 Public Read Access',
+        description: 'S3 bucket configured with public read access',
+        owaspCategory: 'A01:2021 - Broken Access Control',
+        severity: 'critical',
+        patterns: [
+            /PublicRead\s*:\s*true/gi,
+            /"Effect":\s*"Allow"[^}]*"Principal":\s*"\*"/gi,
+            /s3:GetObject[^}]*"Principal":\s*"\*"/gi
+        ],
+        languages: ['json', 'yaml', 'javascript', 'typescript', 'python'],
+        mitigation: 'Remove public access and implement proper bucket policies'
+    },
+    {
+        id: 'cloud-aws-lambda-1',
+        name: 'AWS Lambda Environment Variable Exposure',
+        description: 'Sensitive data in Lambda environment variables',
+        owaspCategory: 'A02:2021 - Cryptographic Failures',
+        severity: 'high',
+        patterns: [
+            /Environment:\s*{[^}]*password/gi,
+            /Environment:\s*{[^}]*secret/gi,
+            /Environment:\s*{[^}]*key/gi,
+            /process\.env\.[A-Z_]*(?:PASSWORD|SECRET|KEY)/gi
+        ],
+        languages: ['yaml', 'javascript', 'typescript', 'python'],
+        mitigation: 'Use AWS Secrets Manager or Parameter Store for sensitive data'
+    },
+    {
+        id: 'cloud-docker-1',
+        name: 'Docker Container Running as Root',
+        description: 'Docker container running with root privileges',
+        owaspCategory: 'A05:2021 - Security Misconfiguration',
+        severity: 'high',
+        patterns: [
+            /USER\s+root/gi,
+            /FROM[^#]*(?!.*USER\s+(?!root))/gi
+        ],
+        languages: ['dockerfile'],
+        mitigation: 'Create and use a non-root user in Docker containers'
+    },
+
+    // Modern Crypto and JWT Security
+    {
+        id: 'jwt-weak-secret-1',
+        name: 'JWT Weak Secret',
+        description: 'JWT signed with weak or default secret',
+        owaspCategory: 'A02:2021 - Cryptographic Failures',
+        severity: 'critical',
+        patterns: [
+            /jwt\.sign\([^,]*,\s*["']secret["']/gi,
+            /jwt\.sign\([^,]*,\s*["']your-256-bit-secret["']/gi,
+            /jwt\.sign\([^,]*,\s*["']key["']/gi,
+            /JWT_SECRET\s*=\s*["'][^"']{1,15}["']/gi
+        ],
+        languages: ['javascript', 'typescript', 'python'],
+        mitigation: 'Use strong, randomly generated secrets of at least 32 characters'
+    },
+    {
+        id: 'jwt-no-verify-1',
+        name: 'JWT Without Verification',
+        description: 'JWT token used without proper verification',
+        owaspCategory: 'A07:2021 - Identification and Authentication Failures',
+        severity: 'critical',
+        patterns: [
+            /jwt\.decode\([^,)]*\)/gi,
+            /JSON\.parse\(atob\([^)]*\.split\(/gi,
+            /base64\.decode\([^)]*\.split\(/gi
+        ],
+        languages: ['javascript', 'typescript', 'python'],
+        mitigation: 'Always verify JWT tokens using jwt.verify() with proper secret'
+    },
+
+    // NoSQL Injection
+    {
+        id: 'nosql-injection-1',
+        name: 'NoSQL Injection Risk',
+        description: 'Potential NoSQL injection in database query',
+        owaspCategory: 'A03:2021 - Injection',
+        severity: 'critical',
+        patterns: [
+            /db\.collection\([^)]*\)\.find\(\s*req\./gi,
+            /Model\.find\(\s*req\./gi,
+            /\$where:\s*[^,}]*\+/gi,
+            /collection\.find\(\s*JSON\.parse\(/gi
+        ],
+        languages: ['javascript', 'typescript', 'python'],
+        mitigation: 'Use parameterized queries and input validation for NoSQL databases'
     }
 ];
 
@@ -287,7 +544,29 @@ export class OwaspSecurityAnalyzer {
             'auth-failures-1': `Implement strong password policy: minimum 8 characters, mixed case, numbers, symbols`,
             'integrity-failures-1': `Validate data before parsing: if (isValidJSON(data)) JSON.parse(data);`,
             'logging-monitoring-1': `Add security logging: logger.info('Authentication attempt', { userId, timestamp });`,
-            'ssrf-1': `Validate URLs against whitelist: if (allowedDomains.includes(domain)) fetch(url);`
+            'ssrf-1': `Validate URLs against whitelist: if (allowedDomains.includes(domain)) fetch(url);`,
+            // Modern Framework Suggestions
+            'react-xss-1': `Use DOMPurify to sanitize HTML: dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(content)}}`,
+            'react-xss-2': `Validate URLs: const safeUrl = new URL(userUrl).protocol === 'https:' ? userUrl : '#';`,
+            'react-state-1': `Use setState: this.setState({property: newValue}) or useState setter: setProperty(newValue)`,
+            'vue-xss-1': `Use v-text for plain text or sanitize HTML: v-html="$sanitize(content)"`,
+            'vue-injection-1': `Avoid dynamic template compilation. Use predefined templates or proper escaping`,
+            'angular-xss-1': `Use DomSanitizer: constructor(private sanitizer: DomSanitizer) {}`,
+            'angular-trust-1': `Validate input thoroughly before bypassing Angular's security`,
+            // API Security Suggestions
+            'api-graphql-1': `Implement query complexity analysis: const depthLimit = require('graphql-depth-limit')(5);`,
+            'api-graphql-2': `Use GraphQL variables: query($id: ID!) { user(id: $id) { name } }`,
+            'api-cors-1': `Configure specific origins: cors({origin: ['https://trusted-domain.com']})`,
+            'api-rate-limit-1': `Add rate limiting: const rateLimit = require('express-rate-limit');`,
+            // Cloud Security Suggestions
+            'cloud-aws-s3-1': `Remove public access and use signed URLs or CloudFront for controlled access`,
+            'cloud-aws-lambda-1': `Use AWS Secrets Manager: const secret = await secretsManager.getSecretValue().promise();`,
+            'cloud-docker-1': `Add non-root user: RUN adduser --disabled-password --gecos '' appuser && USER appuser`,
+            // JWT Security Suggestions
+            'jwt-weak-secret-1': `Use strong secret: const secret = crypto.randomBytes(64).toString('hex');`,
+            'jwt-no-verify-1': `Always verify JWT: const decoded = jwt.verify(token, secret);`,
+            // NoSQL Security Suggestions
+            'nosql-injection-1': `Sanitize input: const query = {_id: mongoose.Types.ObjectId(req.params.id)};`
         };
 
         return suggestions[rule.id] || rule.mitigation;

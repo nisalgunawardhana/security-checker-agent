@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { MultiLanguageParser } from '../security/parser';
 import { OwaspSecurityAnalyzer, SecurityVulnerability } from '../security/owaspRules';
 import { SecurityReportGenerator, SecurityReport } from '../security/reportGenerator';
+import { SecurityKnowledgeProvider } from '../security/knowledgeBase';
 
 interface SecurityChatResult extends vscode.ChatResult {
     metadata: {
@@ -14,10 +15,12 @@ interface SecurityChatResult extends vscode.ChatResult {
 export class SecurityChatParticipant {
     private parser: MultiLanguageParser;
     private reportGenerator: SecurityReportGenerator;
+    private knowledgeProvider: SecurityKnowledgeProvider;
 
     constructor() {
         this.parser = new MultiLanguageParser();
         this.reportGenerator = new SecurityReportGenerator();
+        this.knowledgeProvider = new SecurityKnowledgeProvider();
     }
 
     async handleChatRequest(
@@ -35,6 +38,10 @@ export class SecurityChatParticipant {
                 return await this.handleCheckCommand(request, stream, token);
             } else if (command === 'help' || command === '') {
                 return this.handleHelpCommand(stream);
+            } else if (command.startsWith('learn') || command.startsWith('explain')) {
+                return this.handleLearnCommand(request, stream);
+            } else if (command.startsWith('secure') || command.startsWith('fix')) {
+                return this.handleSecureCommand(request, stream);
             } else {
                 return this.handleUnknownCommand(stream, command);
             }
@@ -182,11 +189,28 @@ export class SecurityChatParticipant {
 
 🔍 \`@security-checker-agent audit\` - Analyze entire workspace for security vulnerabilities
 📄 \`@security-checker-agent check\` - Analyze current file only
+🎓 \`@security-checker-agent learn [topic]\` - Learn about security concepts and best practices
+🔧 \`@security-checker-agent fix [issue]\` - Get specific security fix recommendations
 ❓ \`@security-checker-agent help\` - Show this help message
 
+**New Enhanced Features:**
+- 🎯 **Modern Framework Support**: React, Vue.js, Angular security analysis
+- 🌐 **API Security**: GraphQL, REST API, CORS vulnerability detection
+- ☁️ **Cloud Security**: AWS, Docker container security checks
+- 🔐 **Enhanced Crypto**: JWT, NoSQL injection, advanced crypto failures
+- 📚 **Interactive Knowledge Base**: Learn and fix security issues
+- 🧠 **Advanced AST Analysis**: Data flow tracking and context-aware detection
+
+**Framework-Specific Analysis:**
+- **React**: XSS via dangerouslySetInnerHTML, state mutations, unsafe hrefs
+- **Vue.js**: v-html XSS risks, template injection vulnerabilities
+- **Angular**: innerHTML XSS, unsafe trust bypass methods
+- **GraphQL**: Query complexity attacks, injection vulnerabilities
+- **JWT**: Weak secrets, verification bypasses, insecure configurations
+
 **Features:**
-- **OWASP Top 10** compliance checking
-- **Multi-language support** (JavaScript, TypeScript, Python, Java, C#, PHP, etc.)
+- **OWASP Top 10** compliance checking with 70+ security rules
+- **Multi-language support** (JavaScript, TypeScript, Python, Java, C#, PHP, Vue, etc.)
 - **Real-time vulnerability detection** with inline suggestions
 - **Comprehensive security reports** with actionable recommendations
 - **AST-based analysis** for deep code inspection
@@ -204,7 +228,8 @@ export class SecurityChatParticipant {
 - 🌐 A10: Server-Side Request Forgery (SSRF)
 
 **Getting Started:**
-Type \`@security-checker-agent audit\` to scan your entire workspace for security issues!`);
+Type \`@security-checker-agent audit\` to scan your entire workspace for security issues!
+Try \`@security-checker-agent learn XSS\` to learn about Cross-Site Scripting prevention!`);
 
         return {
             metadata: {
@@ -332,5 +357,164 @@ ${vuln.text}
                 title: '📄 Analyze Current File'
             });
         }
+    }
+
+    private handleLearnCommand(
+        request: vscode.ChatRequest,
+        stream: vscode.ChatResponseStream
+    ): SecurityChatResult {
+        const query = request.prompt.replace(/^(learn|explain)\s*/i, '').trim();
+        
+        if (!query) {
+            stream.markdown('🎓 **Security Learning Center**\\n\\n');
+            stream.markdown('Ask me to explain any security concept! Examples:\\n');
+            stream.markdown('- `@security-checker-agent learn XSS`\\n');
+            stream.markdown('- `@security-checker-agent explain SQL injection`\\n');
+            stream.markdown('- `@security-checker-agent learn JWT security`\\n');
+            stream.markdown('- `@security-checker-agent explain React security`\\n\\n');
+            
+            const allKnowledge = this.knowledgeProvider.getAllKnowledge();
+            stream.markdown('**Available Topics:**\\n');
+            allKnowledge.forEach(kb => {
+                stream.markdown(`- ${kb.title}\\n`);
+            });
+            
+            return { metadata: { command: 'learn', vulnerabilitiesFound: 0, securityScore: 0 } };
+        }
+
+        const knowledge = this.knowledgeProvider.searchKnowledge(query);
+        
+        if (knowledge.length === 0) {
+            stream.markdown(`❌ **No knowledge found for "${query}"**\\n\\n`);
+            stream.markdown('Try searching for terms like: XSS, SQL injection, JWT, React security, API security, etc.');
+            return { metadata: { command: 'learn', vulnerabilitiesFound: 0, securityScore: 0 } };
+        }
+
+        stream.markdown(`📚 **Security Knowledge: ${knowledge[0].title}**\\n\\n`);
+        stream.markdown(`**Category:** ${knowledge[0].category}\\n`);
+        stream.markdown(`**Severity:** ${knowledge[0].severity}\\n`);
+        if (knowledge[0].cweId) {
+            stream.markdown(`**CWE ID:** ${knowledge[0].cweId}\\n`);
+        }
+        stream.markdown(`\\n${knowledge[0].description}\\n\\n`);
+
+        stream.markdown('### ❌ Vulnerable Code Example\\n');
+        stream.markdown(`\`\`\`javascript\\n${knowledge[0].examples.vulnerable}\\n\`\`\`\\n\\n`);
+
+        stream.markdown('### ✅ Secure Code Example\\n');
+        stream.markdown(`\`\`\`javascript\\n${knowledge[0].examples.secure}\\n\`\`\`\\n\\n`);
+
+        stream.markdown('### 📖 Additional Resources\\n');
+        knowledge[0].references.forEach(ref => {
+            stream.markdown(`- [${ref}](${ref})\\n`);
+        });
+
+        return { metadata: { command: 'learn', vulnerabilitiesFound: 0, securityScore: 0 } };
+    }
+
+    private handleSecureCommand(
+        request: vscode.ChatRequest,
+        stream: vscode.ChatResponseStream
+    ): SecurityChatResult {
+        const query = request.prompt.replace(/^(secure|fix)\s*/i, '').trim();
+        
+        if (!query) {
+            stream.markdown('🔧 **Security Fix Suggestions**\\n\\n');
+            stream.markdown('Describe your security issue and I will provide specific fix recommendations!\\n\\n');
+            stream.markdown('Examples:\\n');
+            stream.markdown('- `@security-checker-agent fix SQL injection in my query`\\n');
+            stream.markdown('- `@security-checker-agent secure my React component`\\n');
+            stream.markdown('- `@security-checker-agent fix XSS vulnerability`\\n');
+            return { metadata: { command: 'secure', vulnerabilitiesFound: 0, securityScore: 0 } };
+        }
+
+        // Search for relevant knowledge based on the query
+        const knowledge = this.knowledgeProvider.searchKnowledge(query);
+        
+        if (knowledge.length === 0) {
+            stream.markdown(`🔍 **Generic Security Recommendations for "${query}"**\\n\\n`);
+            
+            // Provide general security advice
+            stream.markdown('### General Security Best Practices:\\n');
+            stream.markdown('1. **Input Validation**: Always validate and sanitize user input\\n');
+            stream.markdown('2. **Authentication**: Implement proper authentication and authorization\\n');
+            stream.markdown('3. **Encryption**: Use strong encryption for sensitive data\\n');
+            stream.markdown('4. **Error Handling**: Do not expose sensitive information in errors\\n');
+            stream.markdown('5. **Security Headers**: Implement proper security headers\\n');
+            stream.markdown('6. **Dependencies**: Keep dependencies updated and scan for vulnerabilities\\n\\n');
+            
+            stream.markdown('💡 **Tip**: Be more specific about your security concern for targeted advice!');
+            return { metadata: { command: 'secure', vulnerabilitiesFound: 0, securityScore: 0 } };
+        }
+
+        const kb = knowledge[0];
+        stream.markdown(`🛠️ **How to Fix: ${kb.title}**\\n\\n`);
+        
+        stream.markdown('### 🎯 Quick Fix\\n');
+        stream.markdown(`\`\`\`javascript\\n${kb.examples.secure}\\n\`\`\`\\n\\n`);
+        
+        stream.markdown('### 📋 Step-by-Step Fix\\n');
+        const steps = this.generateFixSteps(kb);
+        steps.forEach((step, index) => {
+            stream.markdown(`${index + 1}. ${step}\\n`);
+        });
+        
+        stream.markdown('\\n### ⚠️ Common Mistakes to Avoid\\n');
+        stream.markdown(`\`\`\`javascript\\n${kb.examples.vulnerable}\\n\`\`\`\\n\\n`);
+        
+        stream.markdown('### 🔗 Learn More\\n');
+        kb.references.forEach(ref => {
+            stream.markdown(`- [${ref}](${ref})\\n`);
+        });
+
+        return { metadata: { command: 'secure', vulnerabilitiesFound: 0, securityScore: 0 } };
+    }
+
+    private generateFixSteps(knowledge: any): string[] {
+        const commonSteps: Record<string, string[]> = {
+            'xss-prevention': [
+                'Replace innerHTML with textContent for plain text content',
+                'If HTML is needed, use a sanitization library like DOMPurify',
+                'In React, use JSX auto-escaping instead of dangerouslySetInnerHTML',
+                'Validate and escape all user input on both client and server side',
+                'Implement Content Security Policy (CSP) headers'
+            ],
+            'sql-injection-prevention': [
+                'Replace string concatenation with parameterized queries',
+                'Use prepared statements or ORM methods that handle escaping',
+                'Validate input types and formats before using in queries',
+                'Implement least privilege principle for database connections',
+                'Use stored procedures where appropriate'
+            ],
+            'jwt-security': [
+                'Generate a strong, random secret key (at least 256 bits)',
+                'Always verify JWT tokens using jwt.verify()',
+                'Set appropriate expiration times for tokens',
+                'Use HTTPS to prevent token interception',
+                'Implement token refresh mechanisms for long-lived sessions'
+            ],
+            'react-security': [
+                'Use JSX auto-escaping for user content',
+                'Validate props and state before rendering',
+                'Use useCallback and useMemo to prevent unnecessary re-renders',
+                'Implement proper error boundaries to prevent information leakage',
+                'Sanitize any HTML content before using dangerouslySetInnerHTML'
+            ],
+            'api-security': [
+                'Implement rate limiting on all endpoints',
+                'Add authentication middleware to protected routes',
+                'Validate all input using schema validation libraries',
+                'Use CORS with specific origins instead of wildcard',
+                'Implement proper error handling without exposing internal details'
+            ]
+        };
+
+        return commonSteps[knowledge.id] || [
+            'Identify the source of the vulnerability',
+            'Implement proper input validation',
+            'Use secure coding practices for the specific technology',
+            'Test the fix thoroughly',
+            'Consider implementing monitoring and logging'
+        ];
     }
 }

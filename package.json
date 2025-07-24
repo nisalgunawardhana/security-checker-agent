@@ -1,8 +1,8 @@
 {
   "name": "security-checker-agent",
   "displayName": "Security Checker Agent",
-  "description": "AI-powered security analysis tool for detecting vulnerabilities in code with OWASP Top 10 integration",
-  "version": "1.0.2",
+  "description": "AI-powered security analysis tool with modern framework support, interactive learning, and advanced OWASP Top 10 vulnerability detection",
+  "version": "1.1.0",
   "publisher": "getasyntax",
   "author": {
     "name": "Nisal Gunawardhana",
@@ -27,7 +27,17 @@
     "copilot",
     "agent",
     "security-scanner",
-    "static-analysis"
+    "static-analysis",
+    "react-security",
+    "vue-security",
+    "angular-security",
+    "api-security",
+    "graphql-security",
+    "jwt-security",
+    "cloud-security",
+    "docker-security",
+    "modern-frameworks",
+    "security-learning"
   ],
   "engines": {
     "vscode": "^1.102.0"

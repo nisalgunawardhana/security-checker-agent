@@ -48,6 +48,15 @@ class SecurityDashboardProvider {
                     case 'exportPdf':
                         vscode.commands.executeCommand('security-checker-agent.exportToPdf');
                         break;
+                    case 'openLearningMode':
+                        this.openLearningMode();
+                        break;
+                    case 'viewKnowledgeBase':
+                        this.viewKnowledgeBase();
+                        break;
+                    case 'learnTopic':
+                        this.learnSpecificTopic(message.topic);
+                        break;
                 }
             },
             undefined,
@@ -63,6 +72,59 @@ class SecurityDashboardProvider {
                 score: score
             });
         }
+    }
+
+    private openLearningMode(): void {
+        // Open GitHub Copilot Chat with a learning prompt
+        vscode.window.showInformationMessage(
+            'Opening Security Learning Mode...',
+            'Start Learning with Copilot'
+        ).then(selection => {
+            if (selection === 'Start Learning with Copilot') {
+                vscode.commands.executeCommand('workbench.panel.chat.view.copilot.focus');
+                // Optionally pre-fill with a learning command
+                vscode.commands.executeCommand('workbench.action.chat.openInSidebar', {
+                    query: '@security help'
+                });
+            }
+        });
+    }
+
+    private viewKnowledgeBase(): void {
+        // Show quick pick with knowledge base topics
+        const knowledgeTopics = [
+            'SQL Injection Prevention',
+            'XSS Protection',
+            'Authentication Security',
+            'Input Validation',
+            'Cryptography Best Practices',
+            'CORS Configuration',
+            'File Upload Security'
+        ];
+
+        vscode.window.showQuickPick(knowledgeTopics, {
+            placeHolder: 'Select a security topic to learn about',
+            title: 'Security Knowledge Base'
+        }).then(selection => {
+            if (selection) {
+                // Open chat with specific learning topic
+                vscode.commands.executeCommand('workbench.panel.chat.view.copilot.focus');
+                vscode.commands.executeCommand('workbench.action.chat.openInSidebar', {
+                    query: `@security learn ${selection.toLowerCase().replace(/\s+/g, '-')}`
+                });
+            }
+        });
+    }
+
+    private learnSpecificTopic(topic: string): void {
+        // Directly open GitHub Copilot Chat with specific topic
+        vscode.commands.executeCommand('workbench.panel.chat.view.copilot.focus');
+        vscode.commands.executeCommand('workbench.action.chat.openInSidebar', {
+            query: `@security learn ${topic}`
+        });
+        
+        // Show a brief notification
+        vscode.window.showInformationMessage(`🎓 Learning about ${topic.replace('-', ' ')} with Copilot Chat`);
     }
 
     private getHtmlContent(): string {
@@ -346,6 +408,148 @@ class SecurityDashboardProvider {
                 grid-column: 1;
             }
         }
+
+        /* Learning Card Styles */
+        .learning-card {
+            background: linear-gradient(135deg, var(--vscode-editor-background) 0%, var(--vscode-sideBar-background) 100%);
+            border: 2px solid var(--vscode-charts-blue);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .learning-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--vscode-charts-blue), var(--vscode-charts-green), var(--vscode-charts-purple));
+        }
+
+        .learning-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .learning-btn {
+            flex: 1;
+            min-width: 140px;
+        }
+
+        .learning-stats {
+            display: flex;
+            justify-content: space-around;
+            background: var(--vscode-input-background);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid var(--vscode-panel-border);
+        }
+
+        .learning-stat {
+            text-align: center;
+            flex: 1;
+        }
+
+        .learning-number {
+            display: block;
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--vscode-charts-blue);
+            line-height: 1.2;
+        }
+
+        .learning-label {
+            display: block;
+            font-size: 11px;
+            color: var(--vscode-descriptionForeground);
+            margin-top: 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .learning-card .instruction-tip {
+            background: var(--vscode-textCodeBlock-background);
+            border-left: 4px solid var(--vscode-charts-blue);
+        }
+
+        /* Knowledge Base Visual Styles */
+        .knowledge-base-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .knowledge-topic {
+            background: var(--vscode-input-background);
+            border: 1px solid var(--vscode-panel-border);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .knowledge-topic:hover {
+            background: var(--vscode-list-hoverBackground);
+            border-color: var(--vscode-charts-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .knowledge-topic::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--vscode-charts-blue), var(--vscode-charts-green));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .knowledge-topic:hover::before {
+            opacity: 1;
+        }
+
+        .topic-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .topic-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--vscode-foreground);
+            margin-bottom: 5px;
+        }
+
+        .topic-description {
+            font-size: 11px;
+            color: var(--vscode-descriptionForeground);
+            line-height: 1.3;
+        }
+
+        @media (max-width: 768px) {
+            .knowledge-base-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .knowledge-base-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
@@ -413,6 +617,82 @@ class SecurityDashboardProvider {
             <button class="btn btn-secondary" onclick="exportPdf()">
                 <span class="btn-icon">📄</span>Export to PDF
             </button>
+        </div>
+
+        <!-- Security Learning Center -->
+        <div class="dashboard-card learning-card full-width-card">
+            <div class="card-header">
+                <span class="card-icon">📚</span>
+                <h3 class="card-title">Security Learning Center</h3>
+            </div>
+            <div class="card-description">
+                Interactive security education with real-world examples, best practices, and hands-on learning resources.
+            </div>
+            <div class="learning-buttons">
+                <button class="btn learning-btn" onclick="openLearningMode()">
+                    <span class="btn-icon">🎓</span>Learn with Copilot
+                </button>
+                <button class="btn btn-secondary learning-btn" onclick="viewKnowledgeBase()">
+                    <span class="btn-icon">🧠</span>View Knowledge Base
+                </button>
+            </div>
+            
+            <!-- Knowledge Base Visual Representation -->
+            <div class="knowledge-base-grid">
+                <div class="knowledge-topic" onclick="learnTopic('sql-injection')">
+                    <div class="topic-icon">🛡️</div>
+                    <div class="topic-title">SQL Injection</div>
+                    <div class="topic-description">Prevention techniques and secure coding practices</div>
+                </div>
+                <div class="knowledge-topic" onclick="learnTopic('xss')">
+                    <div class="topic-icon">🔒</div>
+                    <div class="topic-title">XSS Protection</div>
+                    <div class="topic-description">Cross-site scripting attack prevention</div>
+                </div>
+                <div class="knowledge-topic" onclick="learnTopic('authentication')">
+                    <div class="topic-icon">🔐</div>
+                    <div class="topic-title">Authentication</div>
+                    <div class="topic-description">Secure authentication and session management</div>
+                </div>
+                <div class="knowledge-topic" onclick="learnTopic('input-validation')">
+                    <div class="topic-icon">✅</div>
+                    <div class="topic-title">Input Validation</div>
+                    <div class="topic-description">Data sanitization and validation techniques</div>
+                </div>
+                <div class="knowledge-topic" onclick="learnTopic('cryptography')">
+                    <div class="topic-icon">🔑</div>
+                    <div class="topic-title">Cryptography</div>
+                    <div class="topic-description">Best practices for encryption and hashing</div>
+                </div>
+                <div class="knowledge-topic" onclick="learnTopic('cors')">
+                    <div class="topic-icon">🌐</div>
+                    <div class="topic-title">CORS Security</div>
+                    <div class="topic-description">Cross-origin resource sharing configuration</div>
+                </div>
+                <div class="knowledge-topic" onclick="learnTopic('file-upload')">
+                    <div class="topic-icon">📁</div>
+                    <div class="topic-title">File Upload</div>
+                    <div class="topic-description">Secure file handling and upload validation</div>
+                </div>
+            </div>
+            
+            <div class="learning-stats">
+                <div class="learning-stat">
+                    <span class="learning-number">7</span>
+                    <span class="learning-label">Security Topics</span>
+                </div>
+                <div class="learning-stat">
+                    <span class="learning-number">15+</span>
+                    <span class="learning-label">Code Examples</span>
+                </div>
+                <div class="learning-stat">
+                    <span class="learning-number">OWASP</span>
+                    <span class="learning-label">Compliant</span>
+                </div>
+            </div>
+            <div class="instruction-tip">
+                <strong>💡 Learning Tip:</strong> Use <code>@security learn [topic]</code> in GitHub Copilot Chat for interactive security education
+            </div>
         </div>
 
         <!-- OWASP Top 10 Coverage -->
@@ -548,6 +828,28 @@ class SecurityDashboardProvider {
                 command: 'exportPdf'
             });
             addActivity('📄', 'Exported security report to PDF');
+        }
+
+        function openLearningMode() {
+            vscode.postMessage({
+                command: 'openLearningMode'
+            });
+            addActivity('🎓', 'Started interactive learning session');
+        }
+
+        function viewKnowledgeBase() {
+            vscode.postMessage({
+                command: 'viewKnowledgeBase'
+            });
+            addActivity('🧠', 'Accessed security knowledge base');
+        }
+
+        function learnTopic(topic) {
+            vscode.postMessage({
+                command: 'learnTopic',
+                topic: topic
+            });
+            addActivity('📚', \`Started learning: \${topic.replace('-', ' ').toUpperCase()}\`);
         }
 
         function clearDiagnostics() {

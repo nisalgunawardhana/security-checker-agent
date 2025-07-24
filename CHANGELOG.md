@@ -5,6 +5,93 @@ All notable changes to the Security Checker Agent extension will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-07-24
+
+### 🎯 Major Enhancements
+
+#### Modern Framework Security Support
+- **React Security**: Added detection for `dangerouslySetInnerHTML` XSS vulnerabilities, unsafe href attributes, and direct state mutations
+- **Vue.js Security**: Implemented v-html XSS detection and template injection vulnerability scanning
+- **Angular Security**: Added innerHTML XSS detection and unsafe trust bypass method identification
+
+#### Advanced API Security
+- **GraphQL Security**: Query complexity analysis, injection vulnerability detection, and DoS prevention
+- **REST API Security**: CORS misconfiguration detection, missing rate limiting identification
+- **JWT Security**: Weak secret detection, verification bypass identification, insecure token handling
+
+#### Cloud & Container Security
+- **AWS Security**: S3 public access detection, Lambda environment variable exposure scanning
+- **Docker Security**: Root user container detection, security misconfiguration identification
+- **Infrastructure Security**: YAML/JSON configuration vulnerability scanning
+
+#### Enhanced Security Analysis
+- **Data Flow Analysis**: Advanced AST-based tainted variable tracking
+- **Context-Aware Detection**: Reduced false positives through intelligent code analysis
+- **NoSQL Injection**: MongoDB and NoSQL database vulnerability detection
+- **Cryptographic Enhancements**: Advanced JWT analysis, weak random generation detection
+
+### 📚 Interactive Knowledge Base
+- **Security Learning**: New `@security-checker-agent learn [topic]` command for interactive security education
+- **Fix Suggestions**: Enhanced `@security-checker-agent fix [issue]` command with step-by-step remediation
+- **Knowledge Integration**: 7 comprehensive security knowledge entries with examples and references
+- **CWE Mapping**: Common Weakness Enumeration integration for standard vulnerability classification
+
+### 🔧 Enhanced Chat Experience
+- **Expanded Commands**: Added `learn` and `fix` commands to the chat interface
+- **Better Help**: Comprehensive help system with framework-specific guidance
+- **Improved Responses**: More detailed and actionable security recommendations
+- **Interactive Examples**: Vulnerable and secure code examples for better understanding
+
+### 🎨 Improved Language Support
+- **New File Types**: Added support for `.vue`, `.dockerfile`, `.yaml`, `.json`, `.rs`, `.kt`, `.swift`
+- **Enhanced Parsing**: Better file detection and language-specific analysis
+- **Framework Detection**: Automatic framework identification for targeted security analysis
+
+### 🎓 Learning Dashboard
+- **Interactive Learning Center**: New dedicated dashboard card for security education
+- **Visual Learning Interface**: Color-coded learning statistics and progress tracking
+- **One-Click Learning**: Direct access to GitHub Copilot learning sessions from dashboard
+- **Knowledge Base Integration**: Quick access to 7+ security topics with guided learning
+- **Learning Progress Tracking**: Visual statistics showing completed topics and learning metrics
+- **Seamless Chat Integration**: Smooth transition from dashboard to interactive learning sessions
+
+### 🚀 Performance & Analysis Improvements
+- **70+ Security Rules**: Expanded from 50+ to 70+ comprehensive security patterns
+- **Advanced AST Analysis**: Enhanced JavaScript/TypeScript analysis with taint tracking
+- **Better Pattern Matching**: More accurate vulnerability detection with reduced false positives
+- **Enhanced Suggestions**: Context-aware remediation suggestions for each vulnerability type
+
+### 📋 New Security Rules Added
+- `react-xss-1`: React dangerouslySetInnerHTML XSS detection
+- `react-xss-2`: React href XSS vulnerability detection  
+- `react-state-1`: React direct state mutation detection
+- `vue-xss-1`: Vue.js v-html XSS risk detection
+- `vue-injection-1`: Vue.js template injection detection
+- `angular-xss-1`: Angular innerHTML XSS risk detection
+- `angular-trust-1`: Angular unsafe trust bypass detection
+- `api-graphql-1`: GraphQL query complexity analysis
+- `api-graphql-2`: GraphQL injection risk detection
+- `api-cors-1`: Insecure CORS configuration detection
+- `api-rate-limit-1`: Missing API rate limiting detection
+- `cloud-aws-s3-1`: AWS S3 public read access detection
+- `cloud-aws-lambda-1`: AWS Lambda environment variable exposure
+- `cloud-docker-1`: Docker container root user detection
+- `jwt-weak-secret-1`: JWT weak secret detection
+- `jwt-no-verify-1`: JWT verification bypass detection
+- `nosql-injection-1`: NoSQL injection risk detection
+
+### 🛠️ Technical Improvements
+- **Enhanced AST Analysis**: More sophisticated Abstract Syntax Tree traversal with vulnerability pattern detection
+- **Knowledge Base System**: Comprehensive security knowledge management with search and categorization
+- **Improved Error Handling**: Better error messages and graceful degradation
+- **Code Organization**: Modular architecture for better maintainability
+
+### 📖 Documentation Updates
+- **Updated README**: Comprehensive documentation reflecting all new features
+- **Enhanced Examples**: Both vulnerable and secure code examples for all supported frameworks
+- **Framework Guides**: Specific security guidance for React, Vue.js, Angular, and API development
+- **Chat Command Documentation**: Complete guide to all available chat commands
+
 ## [1.0.2] - 2025-07-22
 
 ### Added

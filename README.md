@@ -15,17 +15,22 @@ Security Checker Agent is a comprehensive VS Code extension that automatically a
 ## ✨ Key Features
 
 ### 🔍 **Comprehensive Security Analysis**
-- **Multi-language support**: JavaScript, TypeScript, Python, Java, C#, PHP, Ruby, Go, C/C++
-- **OWASP Top 10 coverage**: All 10 categories with 50+ security rules
+- **Multi-language support**: JavaScript, TypeScript, Python, Java, C#, PHP, Ruby, Go, C/C++, Vue.js, Rust, Kotlin
+- **OWASP Top 10 coverage**: All 10 categories with 70+ security rules
+- **Modern frameworks**: React, Vue.js, Angular specific vulnerability detection
+- **API security**: GraphQL, REST API, CORS vulnerability scanning
+- **Cloud security**: AWS, Docker, container security patterns
 - **AST-based analysis**: Deep code understanding beyond simple pattern matching
 - **Real-time detection**: Instant feedback as you code
 
 ### 🤖 **GitHub Copilot Integration**
 Chat with the security agent using natural language:
 ```
-@security-checker-agent audit    # Analyze entire workspace
-@security-checker-agent check    # Analyze current file
-@security-checker-agent help     # Get help and commands
+@security-checker-agent audit         # Analyze entire workspace
+@security-checker-agent check         # Analyze current file
+@security-checker-agent learn XSS     # Learn about security topics
+@security-checker-agent fix SQL       # Get specific fix suggestions
+@security-checker-agent help          # Get help and commands
 ```
 
 ### 📊 **Interactive Security Reports**
@@ -33,10 +38,21 @@ Chat with the security agent using natural language:
 - **Visual dashboards**: HTML reports with vulnerability breakdowns
 - **Tree view navigation**: Organized by OWASP categories
 - **Inline diagnostics**: VS Code Problems panel integration
+- **Knowledge base**: Interactive learning with examples and fixes
+
+### 🎓 **Learning Dashboard**
+- **Interactive security education**: Dedicated learning center with guided tutorials
+- **Knowledge base access**: Quick access to 7+ security topics with examples
+- **Learning statistics**: Track your security education progress
+- **One-click learning**: Start interactive sessions directly from dashboard
+- **GitHub Copilot integration**: Seamless transition to chat-based learning
+- **Visual learning resources**: Color-coded interface with progress tracking
 
 ### ⚡ **Smart Analysis Engine**
 - **Pattern matching**: Regex-based vulnerability detection
-- **Context awareness**: Reduces false positives
+- **Data flow analysis**: Track tainted variables through code
+- **Context awareness**: Reduces false positives with AST analysis
+- **Framework-specific rules**: Tailored detection for React, Vue, Angular
 - **Configurable rules**: Enable/disable specific security checks
 - **Performance optimized**: Non-blocking background analysis
 
@@ -54,6 +70,32 @@ Chat with the security agent using natural language:
 | **A08: Data Integrity Failures** | Data validation issues | Unsafe deserialization, tampering |
 | **A09: Logging/Monitoring Failures** | Insufficient logging | Missing security event logs |
 | **A10: Server-Side Request Forgery** | SSRF vulnerabilities | Unvalidated URL requests |
+
+## 🎯 Modern Framework Security
+
+### React Security Patterns
+- **dangerouslySetInnerHTML XSS**: Detects unsafe HTML injection in React components
+- **href XSS vulnerabilities**: Identifies dynamic href attributes that can lead to XSS
+- **State mutation issues**: Catches direct state modifications that bypass React's update cycle
+
+### Vue.js Security Patterns  
+- **v-html XSS risks**: Detects unsafe use of v-html directive with user input
+- **Template injection**: Identifies dynamic template compilation vulnerabilities
+
+### Angular Security Patterns
+- **innerHTML XSS**: Catches unsafe innerHTML binding with user data
+- **Trust bypass issues**: Detects misuse of Angular's security bypass methods
+
+### API Security Patterns
+- **GraphQL vulnerabilities**: Query complexity attacks, injection risks
+- **CORS misconfigurations**: Overly permissive cross-origin policies  
+- **Rate limiting gaps**: Missing rate limiting on API endpoints
+- **JWT security issues**: Weak secrets, missing verification
+
+### Cloud Security Patterns
+- **AWS S3 misconfigurations**: Public bucket access, insecure policies
+- **Docker security**: Root user containers, exposed secrets
+- **Lambda security**: Environment variable exposure, privilege escalation
 
 ## � Getting Started
 
@@ -79,6 +121,22 @@ Chat with the security agent using natural language:
 #### 4. **Navigate Vulnerabilities**
 - Use the **Security Analysis** tree view in the Explorer
 - Click on any vulnerability to jump to the code location
+
+#### 5. **Access Learning Dashboard**
+- **Command Palette**: `Security Checker: Show Dashboard`
+- Click **"Start Learning"** in the Learning Center card
+- Access **Knowledge Base** for topic-specific education
+- Track your learning progress with built-in statistics
+
+#### 6. **Interactive Learning**
+- **Chat Commands**: 
+  - `@security learn sql-injection` - Learn about SQL injection
+  - `@security learn xss` - XSS prevention techniques
+  - `@security learn authentication` - Authentication security
+- **Dashboard Features**:
+  - One-click learning mode activation
+  - Quick access to 7+ security topics
+  - Visual progress tracking
 
 ## ⚙️ Configuration
 
@@ -126,6 +184,19 @@ const user = { role: 'admin' };
 
 // A03: Command Injection
 exec('ls -la ' + userInput);
+
+// React XSS
+<div dangerouslySetInnerHTML={{__html: userInput}} />
+
+// Vue.js XSS
+<div v-html="userContent"></div>
+
+// GraphQL Injection
+const query = `{ user(id: "${req.params.id}") { name } }`;
+
+// JWT Security Issues
+const token = jwt.decode(userToken); // No verification
+const secret = 'weak-secret'; // Weak secret
 ```
 
 ### ✅ Secure Code (Recommended)
@@ -142,6 +213,21 @@ const userRole = await getUserRole(userId);
 
 // A03: Safe Command Execution
 execFile('ls', ['-la', sanitizedInput]);
+
+// React Security
+<div>{userInput}</div> // Auto-escaped
+<div dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(userInput)}} />
+
+// Vue.js Security
+<div>{{ userContent }}</div> // Auto-escaped
+
+// GraphQL Security
+const query = 'query($id: ID!) { user(id: $id) { name } }';
+graphql(schema, query, null, null, { id: userId });
+
+// JWT Security
+const decoded = jwt.verify(token, strongSecret); // Proper verification
+const secret = crypto.randomBytes(64).toString('hex'); // Strong secret
 ```
 
 ## 🔧 Commands
@@ -175,6 +261,7 @@ The extension calculates a security score from **0-100** based on detected vulne
 |----------|----------------|---------------|
 | **JavaScript** | `.js`, `.jsx` | AST + Pattern |
 | **TypeScript** | `.ts`, `.tsx` | AST + Pattern |
+| **Vue.js** | `.vue` | Pattern |
 | **Python** | `.py` | Pattern |
 | **Java** | `.java` | Pattern |
 | **C#** | `.cs` | Pattern |
@@ -182,6 +269,10 @@ The extension calculates a security score from **0-100** based on detected vulne
 | **Ruby** | `.rb` | Pattern |
 | **Go** | `.go` | Pattern |
 | **C/C++** | `.c`, `.cpp` | Pattern |
+| **Rust** | `.rs` | Pattern |
+| **Kotlin** | `.kt` | Pattern |
+| **Docker** | `Dockerfile` | Pattern |
+| **YAML/JSON** | `.yaml`, `.json` | Pattern |
 
 ## 🤝 Contributing
 
