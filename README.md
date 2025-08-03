@@ -1,6 +1,6 @@
 # 🛡️ Security Checker Agent
 
-**AI-powered security analysis extension for VS Code that detects vulnerabilities using OWASP Top 10 guidelines**
+**AI-powered security analysis extension for VS Code with MCP Security Checker that detects vulnerabilities using OWASP Top 10 + OWASP LLM Top 10 guidelines**
 
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/getasyntax.security-checker-agent?label=VS%20Code%20Marketplace&logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=getasyntax.security-checker-agent)
 [![Downloads](https://img.shields.io/visual-studio-marketplace/d/getasyntax.security-checker-agent)](https://marketplace.visualstudio.com/items?itemName=getasyntax.security-checker-agent)
@@ -10,9 +10,26 @@
 [![GitHub Stars](https://img.shields.io/github/stars/nisalgunawardhana/security-checker-agent)](https://github.com/nisalgunawardhana/security-checker-agent)
 
 
-Security Checker Agent is a comprehensive VS Code extension that automatically analyzes your code for security vulnerabilities based on the **OWASP Top 10** security risks. It provides real-time security analysis, actionable suggestions, and integrates seamlessly with **GitHub Copilot**.
+Security Checker Agent is a comprehensive VS Code extension that automatically analyzes your code for security vulnerabilities based on the **OWASP Top 10** security risks and includes a specialized **MCP Security Checker** for Model Context Protocol implementations. It provides real-time security analysis, actionable suggestions, and integrates seamlessly with **GitHub Copilot**.
 
 ## ✨ Key Features
+
+### 🤖 **MCP Security Checker** ⭐ NEW ⭐
+- **Automatic MCP Detection**: Automatically scans workspace for Model Context Protocol servers
+- **10 Critical MCP Vulnerabilities**: Comprehensive analysis of MCP-specific security threats
+  - 🔸 Prompt Injection
+  - 🔸 Tool Poisoning
+  - 🔸 Dynamic Tool Changes
+  - 🔸 Misconfigured Authentication & Authorization
+  - 🔸 Excessive Permissions
+  - 🔸 Indirect Prompt Injections
+  - 🔸 Session Hijacking
+  - 🔸 Confused Deputy Problem
+  - 🔸 Token Passthrough Vulnerabilities
+  - 🔸 Supply Chain Vulnerabilities
+- **OWASP LLM Top 10 Integration**: Analysis against OWASP LLM security guidelines
+- **Interactive Animations**: Beautiful scanning animations with real-time progress
+- **Detailed Reporting**: Comprehensive MCP security reports with recommendations
 
 ### 🔍 **Comprehensive Security Analysis**
 - **Multi-language support**: JavaScript, TypeScript, Python, Java, C#, PHP, Ruby, Go, C/C++, Vue.js, Rust, Kotlin
@@ -28,6 +45,7 @@ Chat with the security agent using natural language:
 ```
 @security-checker-agent audit         # Analyze entire workspace
 @security-checker-agent check         # Analyze current file
+@security-checker-agent mcp           # Scan for MCP security issues
 @security-checker-agent learn XSS     # Learn about security topics
 @security-checker-agent fix SQL       # Get specific fix suggestions
 @security-checker-agent help          # Get help and commands
@@ -36,12 +54,14 @@ Chat with the security agent using natural language:
 ### 📊 **Interactive Security Reports**
 - **Security scoring**: 0-100 rating based on vulnerability severity
 - **Visual dashboards**: HTML reports with vulnerability breakdowns
+- **MCP-specific reports**: Dedicated reporting for MCP security analysis
 - **Tree view navigation**: Organized by OWASP categories
 - **Inline diagnostics**: VS Code Problems panel integration
 - **Knowledge base**: Interactive learning with examples and fixes
 
 ### 🎓 **Learning Dashboard**
 - **Interactive security education**: Dedicated learning center with guided tutorials
+- **MCP Security Learning**: Specialized learning modules for MCP security best practices
 - **Knowledge base access**: Quick access to 7+ security topics with examples
 - **Learning statistics**: Track your security education progress
 - **One-click learning**: Start interactive sessions directly from dashboard

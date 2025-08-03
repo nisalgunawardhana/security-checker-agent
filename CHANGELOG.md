@@ -5,6 +5,41 @@ All notable changes to the Security Checker Agent extension will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-08-01
+
+### 🤖 Major Feature: MCP Security Checker
+
+#### New MCP Security Analysis
+- **🔍 Automatic MCP Detection**: Intelligent scanning for Model Context Protocol servers in workspaces
+- **🛡️ 10 Critical MCP Vulnerabilities**: Comprehensive security analysis covering:
+  - Prompt Injection attacks
+  - Tool Poisoning vulnerabilities
+  - Dynamic Tool Changes security risks
+  - Misconfigured Authentication & Authorization
+  - Excessive Permissions detection
+  - Indirect Prompt Injections
+  - Session Hijacking vulnerabilities
+  - Confused Deputy Problem identification
+  - Token Passthrough Vulnerabilities
+  - Supply Chain Vulnerabilities
+
+#### OWASP LLM Top 10 Integration
+- **🧠 LLM Security Standards**: Analysis against OWASP LLM Top 10 guidelines
+- **🎯 Context-Aware Analysis**: MCP-specific security pattern detection
+- **📊 Specialized Reporting**: Dedicated MCP security reports with actionable recommendations
+
+#### Enhanced User Experience
+- **🎬 Interactive Animations**: Beautiful scanning animations with real-time progress indicators
+- **📈 Live Status Updates**: Real-time MCP server detection and vulnerability tracking
+- **🎨 Modern Dashboard**: Updated security dashboard with dedicated MCP section
+- **📚 MCP Learning Module**: Specialized educational content for MCP security best practices
+
+#### Technical Improvements
+- **⚡ Performance Optimized**: Efficient MCP server detection algorithms
+- **🔧 Configuration Options**: Customizable MCP security analysis settings
+- **📱 Responsive Design**: Enhanced mobile-friendly dashboard layout
+- **🎛️ Advanced Filtering**: MCP-specific vulnerability categorization and filtering
+
 ## [1.1.0] - 2025-07-24
 
 ### 🎯 Major Enhancements
