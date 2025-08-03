@@ -57,6 +57,15 @@ class SecurityDashboardProvider {
                     case 'learnTopic':
                         this.learnSpecificTopic(message.topic);
                         break;
+                    case 'scanMCP':
+                        vscode.commands.executeCommand('security-checker-agent.scanMCP');
+                        break;
+                    case 'stopMCPScan':
+                        vscode.commands.executeCommand('security-checker-agent.stopMCPScan');
+                        break;
+                    case 'learnMCPSecurity':
+                        this.learnMCPSecurity();
+                        break;
                 }
             },
             undefined,
@@ -72,6 +81,33 @@ class SecurityDashboardProvider {
                 score: score
             });
         }
+    }
+
+    public updateMCPScanResults(serverCount: number, vulnerabilityCount: number, score: number): void {
+        if (this.panel) {
+            this.panel.webview.postMessage({
+                command: 'updateMCPScanResults',
+                servers: serverCount,
+                vulnerabilities: vulnerabilityCount,
+                score: score
+            });
+        }
+    }
+
+    private learnMCPSecurity(): void {
+        // Open GitHub Copilot Chat with MCP security learning prompt
+        vscode.window.showInformationMessage(
+            'Opening MCP Security Learning Mode...',
+            'Start Learning with Copilot'
+        ).then(selection => {
+            if (selection === 'Start Learning with Copilot') {
+                vscode.commands.executeCommand('workbench.panel.chat.view.copilot.focus');
+                // Pre-fill with MCP security learning command
+                vscode.commands.executeCommand('workbench.action.chat.openInSidebar', {
+                    query: '@security learn mcp-security: Tell me about Model Context Protocol security best practices, OWASP LLM Top 10, and how to prevent prompt injection attacks in MCP servers.'
+                });
+            }
+        });
     }
 
     private openLearningMode(): void {
@@ -250,6 +286,15 @@ class SecurityDashboardProvider {
             background-color: var(--vscode-button-secondaryHoverBackground);
         }
 
+        .btn-danger {
+            background-color: #dc3545;
+            color: #ffffff;
+        }
+
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+
         .btn-icon {
             margin-right: 6px;
         }
@@ -409,144 +454,331 @@ class SecurityDashboardProvider {
             }
         }
 
-        /* Learning Card Styles */
-        .learning-card {
-            background: linear-gradient(135deg, var(--vscode-editor-background) 0%, var(--vscode-sideBar-background) 100%);
-            border: 2px solid var(--vscode-charts-blue);
+        /* MCP Security Card Styles */
+        .mcp-security-card {
+            background: linear-gradient(135deg, #0e0e0eff, #1a1d29);
+            color: #ffffff;
+            border: 2px solid rgba(255, 87, 34, 0.6);
             border-radius: 12px;
             position: relative;
             overflow: hidden;
         }
 
-        .learning-card::before {
+        .mcp-security-card::before {
             content: '';
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
             height: 4px;
-            background: linear-gradient(90deg, var(--vscode-charts-blue), var(--vscode-charts-green), var(--vscode-charts-purple));
+            background: linear-gradient(90deg, #ff5722, #ff9800, #ffc107);
         }
 
-        .learning-buttons {
+        .new-feature-badge {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-left: auto;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .mcp-status-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+            padding: 15px;
+            background: var(--vscode-input-background);
+            border-radius: 8px;
+            border: 1px solid var(--vscode-panel-border);
+        }
+
+        .mcp-status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: var(--vscode-editor-background);
+            border-radius: 6px;
+            border: 1px solid var(--vscode-panel-border);
+        }
+
+        .mcp-status-icon {
+            font-size: 20px;
+            width: 30px;
+            text-align: center;
+        }
+
+        .mcp-status-text {
+            flex: 1;
+        }
+
+        .mcp-status-title {
+            font-size: 11px;
+            color: var(--vscode-descriptionForeground);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+
+        .mcp-status-value {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--vscode-foreground);
+        }
+
+        .mcp-action-buttons {
             display: flex;
             gap: 10px;
-            margin-bottom: 15px;
+            margin: 15px 0;
             flex-wrap: wrap;
         }
 
-        .learning-btn {
+        .mcp-action-buttons .btn {
             flex: 1;
-            min-width: 140px;
+            min-width: 180px;
         }
 
-        .learning-stats {
-            display: flex;
-            justify-content: space-around;
-            background: var(--vscode-input-background);
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 15px;
-            border: 1px solid var(--vscode-panel-border);
-        }
-
-        .learning-stat {
-            text-align: center;
-            flex: 1;
-        }
-
-        .learning-number {
-            display: block;
-            font-size: 18px;
-            font-weight: bold;
-            color: var(--vscode-charts-blue);
-            line-height: 1.2;
-        }
-
-        .learning-label {
-            display: block;
-            font-size: 11px;
-            color: var(--vscode-descriptionForeground);
-            margin-top: 2px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .learning-card .instruction-tip {
-            background: var(--vscode-textCodeBlock-background);
-            border-left: 4px solid var(--vscode-charts-blue);
-        }
-
-        /* Knowledge Base Visual Styles */
-        .knowledge-base-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
+        .mcp-vulnerability-categories {
             margin: 20px 0;
         }
 
-        .knowledge-topic {
+        .mcp-vulnerability-categories h4 {
+            color: #ff5722;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .mcp-categories-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+
+        .mcp-category {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 10px;
+            background: var(--vscode-input-background);
+            border: 1px solid var(--vscode-panel-border);
+            border-radius: 6px;
+            font-size: 11px;
+            transition: all 0.2s ease;
+        }
+
+        .mcp-category:hover {
+            background: var(--vscode-list-hoverBackground);
+            border-color: #ff5722;
+        }
+
+        .category-icon {
+            font-size: 12px;
+        }
+
+        .category-name {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .mcp-scanning {
+            animation: mcpScan 3s infinite;
+        }
+
+        @keyframes mcpScan {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* MCP Scan Progress Styles */
+        .mcp-scan-progress {
+            margin: 20px 0;
+            padding: 15px;
             background: var(--vscode-input-background);
             border: 1px solid var(--vscode-panel-border);
             border-radius: 8px;
-            padding: 15px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
+        }
+
+        .scan-progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--vscode-progressBar-background);
+            border-radius: 4px;
             overflow: hidden;
+            margin-bottom: 10px;
         }
 
-        .knowledge-topic:hover {
-            background: var(--vscode-list-hoverBackground);
-            border-color: var(--vscode-charts-blue);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        .scan-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff5722, #ff9800);
+            border-radius: 4px;
+            animation: progressPulse 2s infinite;
+            width: 0%;
+            transition: width 0.3s ease;
         }
 
-        .knowledge-topic::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--vscode-charts-blue), var(--vscode-charts-green));
-            opacity: 0;
-            transition: opacity 0.3s ease;
+        @keyframes progressPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
         }
 
-        .knowledge-topic:hover::before {
-            opacity: 1;
+        .scan-progress-text {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: var(--vscode-descriptionForeground);
         }
 
-        .topic-icon {
-            font-size: 24px;
-            margin-bottom: 8px;
-            display: block;
-        }
-
-        .topic-title {
-            font-size: 14px;
+        #mcpScanStage {
             font-weight: 600;
             color: var(--vscode-foreground);
-            margin-bottom: 5px;
         }
 
-        .topic-description {
-            font-size: 11px;
-            color: var(--vscode-descriptionForeground);
-            line-height: 1.3;
+        #mcpScanTime {
+            color: #ff5722;
+            font-weight: 600;
         }
 
-        @media (max-width: 768px) {
-            .knowledge-base-grid {
+        /* MCP Notifications Styles */
+        .mcp-notifications {
+            margin-top: 15px;
+        }
+
+        .mcp-notification {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .mcp-notification.info {
+            background: rgba(13, 110, 253, 0.1);
+            border: 1px solid rgba(13, 110, 253, 0.3);
+            color: #0d6efd;
+        }
+
+        .mcp-notification.success {
+            background: rgba(25, 135, 84, 0.1);
+            border: 1px solid rgba(25, 135, 84, 0.3);
+            color: #198754;
+        }
+
+        .mcp-notification.warning {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            color: #ffc107;
+        }
+
+        .mcp-notification.error {
+            background: rgba(220, 53, 69, 0.1);
+            border: 1px solid rgba(220, 53, 69, 0.3);
+            color: #dc3545;
+        }
+
+        .notification-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .notification-close {
+            background: none;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 3px;
+            transition: background-color 0.2s ease;
+        }
+
+        .notification-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        /* Button States */
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn.btn-scanning {
+            background: linear-gradient(45deg, #ff5722, #ff9800);
+            animation: scanningPulse 1.5s infinite;
+        }
+
+        @keyframes scanningPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.9; }
+        }
+
+        @media (max-width: 1024px) {
+            .mcp-status-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .mcp-categories-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
         }
 
-        @media (max-width: 480px) {
-            .knowledge-base-grid {
+        @media (max-width: 768px) {
+            .mcp-action-buttons {
+                flex-direction: column;
+            }
+            
+            .mcp-action-buttons .btn {
+                min-width: unset;
+            }
+            
+            .mcp-categories-grid {
                 grid-template-columns: 1fr;
             }
         }
@@ -619,79 +851,115 @@ class SecurityDashboardProvider {
             </button>
         </div>
 
-        <!-- Security Learning Center -->
-        <div class="dashboard-card learning-card full-width-card">
+        <!-- MCP Security Checker -->
+        <div class="dashboard-card mcp-security-card full-width-card">
             <div class="card-header">
-                <span class="card-icon">📚</span>
-                <h3 class="card-title">Security Learning Center</h3>
+                <span class="card-icon">🤖</span>
+                <h3 class="card-title">MCP Security Checker</h3>
+                <span class="new-feature-badge">NEW</span>
             </div>
             <div class="card-description">
-                Interactive security education with real-world examples, best practices, and hands-on learning resources.
-            </div>
-            <div class="learning-buttons">
-                <button class="btn learning-btn" onclick="openLearningMode()">
-                    <span class="btn-icon">🎓</span>Learn with Copilot
-                </button>
-                <button class="btn btn-secondary learning-btn" onclick="viewKnowledgeBase()">
-                    <span class="btn-icon">🧠</span>View Knowledge Base
-                </button>
+                Comprehensive security analysis for Model Context Protocol (MCP) servers. Detects 10 critical MCP security vulnerabilities including prompt injection, tool poisoning, and OWASP LLM Top 10 violations.
             </div>
             
-            <!-- Knowledge Base Visual Representation -->
-            <div class="knowledge-base-grid">
-                <div class="knowledge-topic" onclick="learnTopic('sql-injection')">
-                    <div class="topic-icon">🛡️</div>
-                    <div class="topic-title">SQL Injection</div>
-                    <div class="topic-description">Prevention techniques and secure coding practices</div>
+            <div class="mcp-status-grid">
+                <div class="mcp-status-item">
+                    <div class="mcp-status-icon" id="mcpDetectionStatus">🔍</div>
+                    <div class="mcp-status-text">
+                        <div class="mcp-status-title">MCP Detection</div>
+                        <div class="mcp-status-value" id="mcpServersFound">Checking...</div>
+                    </div>
                 </div>
-                <div class="knowledge-topic" onclick="learnTopic('xss')">
-                    <div class="topic-icon">🔒</div>
-                    <div class="topic-title">XSS Protection</div>
-                    <div class="topic-description">Cross-site scripting attack prevention</div>
+                <div class="mcp-status-item">
+                    <div class="mcp-status-icon" id="mcpSecurityStatus">🛡️</div>
+                    <div class="mcp-status-text">
+                        <div class="mcp-status-title">Security Status</div>
+                        <div class="mcp-status-value" id="mcpVulnerabilities">Not scanned</div>
+                    </div>
                 </div>
-                <div class="knowledge-topic" onclick="learnTopic('authentication')">
-                    <div class="topic-icon">🔐</div>
-                    <div class="topic-title">Authentication</div>
-                    <div class="topic-description">Secure authentication and session management</div>
-                </div>
-                <div class="knowledge-topic" onclick="learnTopic('input-validation')">
-                    <div class="topic-icon">✅</div>
-                    <div class="topic-title">Input Validation</div>
-                    <div class="topic-description">Data sanitization and validation techniques</div>
-                </div>
-                <div class="knowledge-topic" onclick="learnTopic('cryptography')">
-                    <div class="topic-icon">🔑</div>
-                    <div class="topic-title">Cryptography</div>
-                    <div class="topic-description">Best practices for encryption and hashing</div>
-                </div>
-                <div class="knowledge-topic" onclick="learnTopic('cors')">
-                    <div class="topic-icon">🌐</div>
-                    <div class="topic-title">CORS Security</div>
-                    <div class="topic-description">Cross-origin resource sharing configuration</div>
-                </div>
-                <div class="knowledge-topic" onclick="learnTopic('file-upload')">
-                    <div class="topic-icon">📁</div>
-                    <div class="topic-title">File Upload</div>
-                    <div class="topic-description">Secure file handling and upload validation</div>
+                <div class="mcp-status-item">
+                    <div class="mcp-status-icon" id="mcpOwaspStatus">📋</div>
+                    <div class="mcp-status-text">
+                        <div class="mcp-status-title">OWASP LLM</div>
+                        <div class="mcp-status-value" id="mcpOwaspCompliance">Pending</div>
+                    </div>
                 </div>
             </div>
-            
-            <div class="learning-stats">
-                <div class="learning-stat">
-                    <span class="learning-number">7</span>
-                    <span class="learning-label">Security Topics</span>
+
+            <div class="mcp-action-buttons">
+                <button class="btn btn-primary" onclick="scanMCP()" id="mcpScanButton">
+                    <span class="btn-icon">🔍</span>Start MCP Security Scan
+                </button>
+                <button class="btn btn-danger" onclick="stopMCPScan()" id="mcpStopButton" style="display: none;">
+                    <span class="btn-icon">⏹️</span>Stop Scan
+                </button>
+                <button class="btn btn-secondary" onclick="learnMCPSecurity()">
+                    <span class="btn-icon">🎓</span>Learn MCP Security
+                </button>
+            </div>
+
+            <!-- MCP Scan Progress Indicator -->
+            <div id="mcpScanProgress" class="mcp-scan-progress" style="display: none;">
+                <div class="scan-progress-bar">
+                    <div class="scan-progress-fill"></div>
                 </div>
-                <div class="learning-stat">
-                    <span class="learning-number">15+</span>
-                    <span class="learning-label">Code Examples</span>
-                </div>
-                <div class="learning-stat">
-                    <span class="learning-number">OWASP</span>
-                    <span class="learning-label">Compliant</span>
+                <div class="scan-progress-text">
+                    <span id="mcpScanStage">Initializing scan...</span>
+                    <span id="mcpScanTime">0s</span>
                 </div>
             </div>
+
+            <!-- MCP Notifications -->
+            <div id="mcpNotifications" class="mcp-notifications"></div>
+
+            <div class="mcp-vulnerability-categories">
+                <h4>🛡️ MCP Security Coverage:</h4>
+                <div class="mcp-categories-grid">
+                    <div class="mcp-category">
+                        <span class="category-icon">⚡</span>
+                        <span class="category-name">Prompt Injection</span>
+                    </div>
+                    <div class="mcp-category">
+                        <span class="category-icon">🧪</span>
+                        <span class="category-name">Tool Poisoning</span>
+                    </div>
+                    <div class="mcp-category">
+                        <span class="category-icon">🔄</span>
+                        <span class="category-name">Dynamic Tool Changes</span>
+                    </div>
+                    <div class="mcp-category">
+                        <span class="category-icon">🔐</span>
+                        <span class="category-name">Auth & Authorization</span>
+                    </div>
+                    <div class="mcp-category">
+                        <span class="category-icon">🎯</span>
+                        <span class="category-name">Excessive Permissions</span>
+                    </div>
+                    <div class="mcp-category">
+                        <span class="category-icon">🔗</span>
+                        <span class="category-name">Indirect Injections</span>
+                    </div>
+                    <div class="mcp-category">
+                        <span class="category-icon">🚪</span>
+                        <span class="category-name">Session Hijacking</span>
+                    </div>
+                    <div class="mcp-category">
+                        <span class="category-icon">👥</span>
+                        <span class="category-name">Confused Deputy</span>
+                    </div>
+                    <div class="mcp-category">
+                        <span class="category-icon">🎫</span>
+                        <span class="category-name">Token Passthrough</span>
+                    </div>
+                    <div class="mcp-category">
+                        <span class="category-icon">📦</span>
+                        <span class="category-name">Supply Chain</span>
+                    </div>
+                </div>
+            </div>
+
             <div class="instruction-tip">
-                <strong>💡 Learning Tip:</strong> Use <code>@security learn [topic]</code> in GitHub Copilot Chat for interactive security education
+                <strong>🤖 MCP Security:</strong> This scanner analyzes Model Context Protocol implementations against OWASP LLM Top 10 and emerging MCP-specific threats.
             </div>
         </div>
 
@@ -860,6 +1128,65 @@ class SecurityDashboardProvider {
             updateScanStatus('Not scanned');
         }
 
+        function scanMCP() {
+            vscode.postMessage({
+                command: 'scanMCP'
+            });
+            addActivity('🤖', 'Started MCP security scan');
+            updateMCPScanUI(true);
+            startScanProgress();
+            showNotification('info', '🔍', 'MCP security scan initiated...');
+        }
+
+        function stopMCPScan() {
+            vscode.postMessage({
+                command: 'stopMCPScan'
+            });
+            updateMCPScanUI(false);
+            stopScanProgress();
+            showNotification('warning', '⏹️', 'MCP scan stopped by user');
+            addActivity('⏹️', 'Stopped MCP security scan');
+        }
+
+        function learnMCPSecurity() {
+            vscode.postMessage({
+                command: 'learnMCPSecurity'
+            });
+            addActivity('🎓', 'Started MCP security learning session');
+        }
+
+        function updateMCPScanUI(isScanning) {
+            const scanButton = document.getElementById('mcpScanButton');
+            const stopButton = document.getElementById('mcpStopButton');
+            const detectionStatus = document.getElementById('mcpDetectionStatus');
+            const securityStatus = document.getElementById('mcpSecurityStatus');
+            const owaspStatus = document.getElementById('mcpOwaspStatus');
+            
+            if (isScanning) {
+                scanButton.innerHTML = '<span class="btn-icon">⏳</span>Scanning...';
+                scanButton.disabled = true;
+                scanButton.classList.add('btn-scanning');
+                stopButton.style.display = 'inline-block';
+                
+                detectionStatus.className = 'mcp-status-icon mcp-scanning';
+                securityStatus.className = 'mcp-status-icon mcp-scanning';
+                owaspStatus.className = 'mcp-status-icon mcp-scanning';
+                
+                document.getElementById('mcpServersFound').textContent = 'Detecting...';
+                document.getElementById('mcpVulnerabilities').textContent = 'Analyzing...';
+                document.getElementById('mcpOwaspCompliance').textContent = 'Checking...';
+            } else {
+                scanButton.innerHTML = '<span class="btn-icon">🔍</span>Start MCP Security Scan';
+                scanButton.disabled = false;
+                scanButton.classList.remove('btn-scanning');
+                stopButton.style.display = 'none';
+                
+                detectionStatus.className = 'mcp-status-icon';
+                securityStatus.className = 'mcp-status-icon';
+                owaspStatus.className = 'mcp-status-icon';
+            }
+        }
+
         function updateScanStatus(status) {
             const scoreElement = document.getElementById('lastScanScore');
             if (scoreElement) {
@@ -897,6 +1224,9 @@ class SecurityDashboardProvider {
                 case 'updateScanResults':
                     updateScanResults(message.vulnerabilities, message.score);
                     break;
+                case 'updateMCPScanResults':
+                    updateMCPScanResults(message.servers, message.vulnerabilities, message.score);
+                    break;
             }
         });
 
@@ -914,6 +1244,141 @@ class SecurityDashboardProvider {
             
             // Add activity for completed scan
             addActivity('✅', \`Scan completed: \${vulnerabilityCount} vulnerabilities found\`);
+        }
+
+        function updateMCPScanResults(serverCount, vulnerabilityCount, score) {
+            updateMCPScanUI(false);
+            stopScanProgress();
+            
+            // Update MCP status displays
+            const serversElement = document.getElementById('mcpServersFound');
+            const vulnerabilitiesElement = document.getElementById('mcpVulnerabilities');
+            const owaspElement = document.getElementById('mcpOwaspCompliance');
+            
+            if (serversElement) {
+                serversElement.textContent = serverCount === 0 ? 'None detected' : \`\${serverCount} found\`;
+                serversElement.style.color = serverCount === 0 ? '#6c757d' : '#28a745';
+            }
+            
+            if (vulnerabilitiesElement) {
+                vulnerabilitiesElement.textContent = vulnerabilityCount === 0 ? '✅ Secure' : \`\${vulnerabilityCount} issues\`;
+                vulnerabilitiesElement.style.color = vulnerabilityCount === 0 ? '#28a745' : vulnerabilityCount > 5 ? '#dc3545' : '#ffc107';
+            }
+            
+            if (owaspElement) {
+                owaspElement.textContent = vulnerabilityCount === 0 ? '✅ Compliant' : '⚠️ Issues found';
+                owaspElement.style.color = vulnerabilityCount === 0 ? '#28a745' : '#dc3545';
+            }
+            
+            // Show completion notification
+            if (serverCount === 0) {
+                showNotification('info', '🔍', 'MCP scan completed: No MCP servers detected in workspace');
+                addActivity('🤖', 'MCP scan completed: No MCP servers detected');
+            } else {
+                const notificationType = vulnerabilityCount === 0 ? 'success' : vulnerabilityCount > 5 ? 'error' : 'warning';
+                const notificationIcon = vulnerabilityCount === 0 ? '✅' : '⚠️';
+                showNotification(notificationType, notificationIcon, \`MCP scan completed: \${serverCount} servers analyzed, \${vulnerabilityCount} vulnerabilities found\`);
+                addActivity('🤖', \`MCP scan completed: \${serverCount} servers, \${vulnerabilityCount} vulnerabilities\`);
+            }
+        }
+
+        // Scan Progress Management
+        let scanTimer = null;
+        let scanStartTime = null;
+        let currentScanStage = 0;
+        const scanStages = [
+            'Initializing scan...',
+            'Detecting MCP servers...',
+            'Analyzing configurations...',
+            'Checking OWASP compliance...',
+            'Generating security report...',
+            'Finalizing results...'
+        ];
+
+        function startScanProgress() {
+            const progressElement = document.getElementById('mcpScanProgress');
+            const progressFill = document.querySelector('.scan-progress-fill');
+            const stageElement = document.getElementById('mcpScanStage');
+            const timeElement = document.getElementById('mcpScanTime');
+            
+            progressElement.style.display = 'block';
+            scanStartTime = Date.now();
+            currentScanStage = 0;
+            
+            // Update progress every 2 seconds
+            scanTimer = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - scanStartTime) / 1000);
+                timeElement.textContent = \`\${elapsed}s\`;
+                
+                // Progress through stages
+                if (currentScanStage < scanStages.length - 1 && elapsed % 3 === 0 && elapsed > 0) {
+                    currentScanStage++;
+                    stageElement.textContent = scanStages[currentScanStage];
+                }
+                
+                // Update progress bar (simulate progress)
+                const progress = Math.min(90, (elapsed / 20) * 100);
+                progressFill.style.width = \`\${progress}%\`;
+                
+                // Show timeout warning after 30 seconds
+                if (elapsed === 30) {
+                    showNotification('warning', '⏱️', 'Scan is taking longer than expected. You can stop it if needed.');
+                }
+            }, 1000);
+        }
+
+        function stopScanProgress() {
+            const progressElement = document.getElementById('mcpScanProgress');
+            const progressFill = document.querySelector('.scan-progress-fill');
+            
+            if (scanTimer) {
+                clearInterval(scanTimer);
+                scanTimer = null;
+            }
+            
+            // Complete the progress bar
+            progressFill.style.width = '100%';
+            
+            // Hide progress after a short delay
+            setTimeout(() => {
+                progressElement.style.display = 'none';
+                progressFill.style.width = '0%';
+            }, 1500);
+        }
+
+        // Notification Management
+        function showNotification(type, icon, message) {
+            const notificationsContainer = document.getElementById('mcpNotifications');
+            const notification = document.createElement('div');
+            notification.className = \`mcp-notification \${type}\`;
+            
+            notification.innerHTML = \`
+                <div class="notification-content">
+                    <span>\${icon}</span>
+                    <span>\${message}</span>
+                </div>
+                <button class="notification-close" onclick="closeNotification(this)">×</button>
+            \`;
+            
+            notificationsContainer.appendChild(notification);
+            
+            // Auto-remove after 10 seconds for info/success, 15 seconds for warning/error
+            const autoRemoveTime = (type === 'info' || type === 'success') ? 10000 : 15000;
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    closeNotification(notification.querySelector('.notification-close'));
+                }
+            }, autoRemoveTime);
+        }
+
+        function closeNotification(closeButton) {
+            const notification = closeButton.parentNode;
+            notification.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
         }
     </script>
 </body>

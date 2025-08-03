@@ -7,13 +7,17 @@ import { DashboardTreeDataProvider } from './ui/dashboardTreeProvider';
 import { SecurityChatParticipant } from './chat/chatParticipant';
 import { SecurityDashboardProvider } from './ui/dashboardProvider';
 import { PdfExporter } from './utils/pdfExporter';
+import { MCPSecurityScanner, MCPSecurityReport } from './security/mcpScanner';
 
 let diagnosticsProvider: SecurityDiagnosticsProvider;
 let treeDataProvider: SecurityTreeDataProvider;
 let dashboardProvider: SecurityDashboardProvider;
+let mcpScanner: MCPSecurityScanner | undefined;
 let statusBarItem: vscode.StatusBarItem;
 let reportWebviewPanel: vscode.WebviewPanel | undefined;
 let currentReport: SecurityReport | undefined;
+let currentMCPReport: MCPSecurityReport | undefined;
+let isMCPScanning: boolean = false;
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('Security Checker Agent extension is now active!');
@@ -93,6 +97,21 @@ export function activate(context: vscode.ExtensionContext) {
         await PdfExporter.exportSecurityReportToPdf(currentReport);
     });
 
+    const scanMCPCommand = vscode.commands.registerCommand('security-checker-agent.scanMCP', async () => {
+        await scanMCP();
+    });
+
+    const stopMCPScanCommand = vscode.commands.registerCommand('security-checker-agent.stopMCPScan', async () => {
+        await stopMCPScan();
+    });
+
+    // Initialize MCP scanner if workspace exists
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (workspaceFolders && workspaceFolders.length > 0) {
+        mcpScanner = new MCPSecurityScanner(workspaceFolders[0].uri.fsPath);
+        mcpScanner.showStatusBar();
+    }
+
     // Auto-analysis on file save (if enabled)
     const onDidSaveDocument = vscode.workspace.onDidSaveTextDocument(async (document: vscode.TextDocument) => {
         const config = vscode.workspace.getConfiguration('securityChecker');
@@ -126,12 +145,97 @@ export function activate(context: vscode.ExtensionContext) {
         showSecurityReportCommand,
         clearDiagnosticsCommand,
         exportToPdfCommand,
+        scanMCPCommand,
+        stopMCPScanCommand,
         onDidSaveDocument,
         onDidChangeActiveTextEditor
     );
 
     // Show welcome message
     showWelcomeNotification(context);
+}
+
+async function scanMCP(): Promise<void> {
+    if (isMCPScanning) {
+        vscode.window.showWarningMessage('MCP scan is already in progress. Please wait for it to complete or stop it first.');
+        return;
+    }
+
+    if (!mcpScanner) {
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders || workspaceFolders.length === 0) {
+            vscode.window.showErrorMessage('No workspace folder found. Please open a workspace to scan for MCP servers.');
+            return;
+        }
+        mcpScanner = new MCPSecurityScanner(workspaceFolders[0].uri.fsPath);
+    }
+
+    isMCPScanning = true;
+
+    try {
+        const report = await mcpScanner.scanMCPSecurity(true);
+        currentMCPReport = report;
+
+        // Update dashboard with MCP scan results
+        dashboardProvider.updateMCPScanResults(
+            report.servers.length,
+            report.summary.totalVulnerabilities,
+            100 - (report.summary.totalVulnerabilities * 10) // Simple scoring algorithm
+        );
+
+        // Show results
+        if (report.servers.length === 0) {
+            vscode.window.showInformationMessage(
+                '🤖 MCP Security Scan Complete: No MCP servers detected in the workspace.',
+                'View Dashboard'
+            ).then(selection => {
+                if (selection === 'View Dashboard') {
+                    dashboardProvider.show();
+                }
+            });
+        } else {
+            const emoji = report.summary.totalVulnerabilities === 0 ? '✅' : 
+                         report.summary.criticalCount > 0 ? '🚨' : 
+                         report.summary.highCount > 0 ? '⚠️' : '🟡';
+            
+            const message = `${emoji} MCP Security Scan Complete!\\n\\n` +
+                           `Servers: ${report.servers.length}\\n` +
+                           `Vulnerabilities: ${report.summary.totalVulnerabilities}\\n` +
+                           `Critical: ${report.summary.criticalCount}\\n` +
+                           `High: ${report.summary.highCount}`;
+
+            const action = await vscode.window.showInformationMessage(
+                message,
+                'View Dashboard',
+                'Show Report'
+            );
+
+            if (action === 'View Dashboard') {
+                dashboardProvider.show();
+            } else if (action === 'Show Report') {
+                await showMCPSecurityReport();
+            }
+        }
+
+    } catch (error) {
+        vscode.window.showErrorMessage(`MCP security scan failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+        isMCPScanning = false;
+    }
+}
+
+async function stopMCPScan(): Promise<void> {
+    if (!isMCPScanning) {
+        vscode.window.showInformationMessage('No MCP scan is currently running.');
+        return;
+    }
+
+    isMCPScanning = false;
+    
+    // Update dashboard to show scan stopped
+    dashboardProvider.updateMCPScanResults(0, 0, 0);
+    
+    vscode.window.showInformationMessage('🛑 MCP security scan has been stopped.');
 }
 
 async function showWelcomeNotification(context: vscode.ExtensionContext): Promise<void> {
@@ -318,6 +422,288 @@ async function analyzeDocument(document: vscode.TextDocument): Promise<void> {
     }
 }
 
+async function showMCPSecurityReport(): Promise<void> {
+    if (!currentMCPReport) {
+        vscode.window.showWarningMessage('No MCP security report available. Please run an MCP scan first.');
+        return;
+    }
+
+    // Create or reveal webview panel for MCP report
+    const mcpReportPanel = vscode.window.createWebviewPanel(
+        'mcpSecurityReport',
+        'MCP Security Analysis Report',
+        vscode.ViewColumn.Two,
+        {
+            enableScripts: true,
+            retainContextWhenHidden: true
+        }
+    );
+
+    // Generate HTML content for MCP report
+    const htmlContent = generateMCPReportHTML(currentMCPReport);
+    mcpReportPanel.webview.html = htmlContent;
+
+    mcpReportPanel.webview.onDidReceiveMessage(
+        async message => {
+            switch (message.command) {
+                case 'navigateToVulnerability':
+                    await navigateToVulnerability(message.filePath, message.line, message.column, message.suggestion);
+                    break;
+            }
+        }
+    );
+}
+
+function generateMCPReportHTML(report: MCPSecurityReport): string {
+    const vulnerabilitiesByCategory = Object.entries(
+        report.vulnerabilities.reduce((acc, vuln) => {
+            const category = vuln.rule.category;
+            if (!acc[category]) {
+                acc[category] = [];
+            }
+            acc[category].push(vuln);
+            return acc;
+        }, {} as Record<string, typeof report.vulnerabilities>)
+    );
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Security Report</title>
+    <style>
+        body {
+            font-family: var(--vscode-font-family);
+            background-color: var(--vscode-editor-background);
+            color: var(--vscode-editor-foreground);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .report-header {
+            background: linear-gradient(135deg, var(--vscode-charts-purple), var(--vscode-charts-blue));
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .report-title {
+            font-size: 28px;
+            margin: 0 0 10px 0;
+            font-weight: bold;
+        }
+        .report-subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .summary-card {
+            background: var(--vscode-sideBar-background);
+            border: 1px solid var(--vscode-panel-border);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+        .summary-number {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .summary-label {
+            font-size: 12px;
+            color: var(--vscode-descriptionForeground);
+            text-transform: uppercase;
+        }
+        .severity-critical { color: #dc3545; }
+        .severity-high { color: #fd7e14; }
+        .severity-medium { color: #ffc107; }
+        .severity-low { color: #28a745; }
+        .category-section {
+            margin-bottom: 30px;
+            background: var(--vscode-sideBar-background);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .category-header {
+            background: var(--vscode-input-background);
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--vscode-panel-border);
+            font-weight: bold;
+        }
+        .vulnerability-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--vscode-panel-border);
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .vulnerability-item:hover {
+            background: var(--vscode-list-hoverBackground);
+        }
+        .vulnerability-item:last-child {
+            border-bottom: none;
+        }
+        .vulnerability-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .vulnerability-description {
+            color: var(--vscode-descriptionForeground);
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .vulnerability-meta {
+            display: flex;
+            gap: 15px;
+            font-size: 12px;
+            color: var(--vscode-descriptionForeground);
+        }
+        .servers-list {
+            background: var(--vscode-sideBar-background);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        .server-item {
+            padding: 10px;
+            border: 1px solid var(--vscode-panel-border);
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+        .server-name {
+            font-weight: bold;
+            color: var(--vscode-charts-blue);
+        }
+        .server-details {
+            font-size: 12px;
+            color: var(--vscode-descriptionForeground);
+            margin-top: 5px;
+        }
+        .no-vulnerabilities {
+            text-align: center;
+            padding: 40px;
+            color: var(--vscode-charts-green);
+            font-size: 18px;
+        }
+        .recommendations {
+            background: var(--vscode-input-background);
+            border-left: 4px solid var(--vscode-charts-blue);
+            padding: 20px;
+            border-radius: 0 8px 8px 0;
+            margin-top: 30px;
+        }
+        .recommendations h3 {
+            margin-top: 0;
+            color: var(--vscode-charts-blue);
+        }
+        .recommendation-item {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="report-header">
+        <h1 class="report-title">🤖 MCP Security Analysis Report</h1>
+        <div class="report-subtitle">Generated on ${report.timestamp.toLocaleString()}</div>
+    </div>
+
+    <div class="summary-grid">
+        <div class="summary-card">
+            <div class="summary-number">${report.servers.length}</div>
+            <div class="summary-label">MCP Servers</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-number severity-critical">${report.summary.criticalCount}</div>
+            <div class="summary-label">Critical</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-number severity-high">${report.summary.highCount}</div>
+            <div class="summary-label">High</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-number severity-medium">${report.summary.mediumCount}</div>
+            <div class="summary-label">Medium</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-number severity-low">${report.summary.lowCount}</div>
+            <div class="summary-label">Low</div>
+        </div>
+    </div>
+
+    <div class="servers-list">
+        <h3>🎯 Detected MCP Servers</h3>
+        ${report.servers.length === 0 ? 
+            '<div class="no-vulnerabilities">No MCP servers detected in the workspace</div>' :
+            report.servers.map(server => `
+                <div class="server-item">
+                    <div class="server-name">${server.name}</div>
+                    <div class="server-details">
+                        Type: ${server.type} | Path: ${server.path}
+                        ${server.tools && server.tools.length > 0 ? `<br>Tools: ${server.tools.join(', ')}` : ''}
+                    </div>
+                </div>
+            `).join('')
+        }
+    </div>
+
+    ${report.vulnerabilities.length === 0 ? 
+        '<div class="no-vulnerabilities">🎉 No MCP security vulnerabilities detected!</div>' :
+        vulnerabilitiesByCategory.map(([category, vulnerabilities]) => `
+            <div class="category-section">
+                <div class="category-header">
+                    🛡️ ${category} (${vulnerabilities.length} issue${vulnerabilities.length !== 1 ? 's' : ''})
+                </div>
+                ${vulnerabilities.map(vuln => `
+                    <div class="vulnerability-item" onclick="navigateToVulnerability('${vuln.filePath}', ${vuln.line}, ${vuln.column}, '${vuln.suggestion.replace(/'/g, "\\'")}')">
+                        <div class="vulnerability-title severity-${vuln.rule.severity}">
+                            ${vuln.rule.name}
+                        </div>
+                        <div class="vulnerability-description">
+                            ${vuln.rule.description}
+                        </div>
+                        <div class="vulnerability-meta">
+                            <span>📁 ${vuln.filePath.split('/').pop()}</span>
+                            <span>📍 Line ${vuln.line}</span>
+                            <span>🔥 ${vuln.rule.severity.toUpperCase()}</span>
+                            ${vuln.rule.owaspLLMCategory ? `<span>🧠 ${vuln.rule.owaspLLMCategory}</span>` : ''}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `).join('')
+    }
+
+    <div class="recommendations">
+        <h3>📋 Security Recommendations</h3>
+        ${report.recommendations.map(rec => `
+            <div class="recommendation-item">${rec}</div>
+        `).join('')}
+    </div>
+
+    <script>
+        const vscode = acquireVsCodeApi();
+
+        function navigateToVulnerability(filePath, line, column, suggestion) {
+            vscode.postMessage({
+                command: 'navigateToVulnerability',
+                filePath: filePath,
+                line: line,
+                column: column,
+                suggestion: suggestion
+            });
+        }
+    </script>
+</body>
+</html>`;
+}
+
 async function showSecurityReport(): Promise<void> {
     if (!currentReport) {
         vscode.window.showWarningMessage('No security report available. Please run an analysis first.');
@@ -430,5 +816,9 @@ function getCommentPrefix(filePath: string): string {
 export function deactivate() {
     if (reportWebviewPanel) {
         reportWebviewPanel.dispose();
+    }
+    
+    if (mcpScanner) {
+        mcpScanner.dispose();
     }
 }

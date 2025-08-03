@@ -1,8 +1,8 @@
 {
   "name": "security-checker-agent",
   "displayName": "Security Checker Agent",
-  "description": "AI-powered security analysis tool with modern framework support, interactive learning, and advanced OWASP Top 10 vulnerability detection",
-  "version": "1.1.0",
+  "description": "AI-powered security analysis tool with MCP security checker, modern framework support, interactive learning, and advanced OWASP Top 10 + LLM vulnerability detection",
+  "version": "1.2.0",
   "publisher": "getasyntax",
   "author": {
     "name": "Nisal Gunawardhana",
@@ -37,7 +37,13 @@
     "cloud-security",
     "docker-security",
     "modern-frameworks",
-    "security-learning"
+    "security-learning",
+    "mcp-security",
+    "model-context-protocol",
+    "prompt-injection",
+    "llm-security",
+    "ai-security",
+    "owasp-llm"
   ],
   "engines": {
     "vscode": "^1.102.0"
@@ -82,6 +88,18 @@
         "command": "security-checker-agent.exportToPdf",
         "title": "Export Security Report to PDF",
         "category": "Security Checker"
+      },
+      {
+        "command": "security-checker-agent.scanMCP",
+        "title": "Scan MCP Security",
+        "category": "Security Checker",
+        "icon": "$(robot)"
+      },
+      {
+        "command": "security-checker-agent.stopMCPScan",
+        "title": "Stop MCP Security Scan",
+        "category": "Security Checker",
+        "icon": "$(stop)"
       }
     ],
     "viewsContainers": {
@@ -180,6 +198,27 @@
             "logging-monitoring"
           ],
           "description": "OWASP Top 10 rules to enable"
+        },
+        "securityChecker.enableMCPSecurity": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Model Context Protocol (MCP) security analysis"
+        },
+        "securityChecker.mcpAutoDetection": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically detect MCP servers in the workspace"
+        },
+        "securityChecker.mcpSeverityThreshold": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ],
+          "default": "medium",
+          "description": "Minimum severity level for MCP vulnerability reporting"
         }
       }
     },
